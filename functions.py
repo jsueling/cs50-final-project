@@ -1,11 +1,13 @@
 import os
 import requests
 import urllib.parse
-import pyEX as pyEX
+
+from flask import redirect
+from functools import wraps
 
 def lookup(symbol):
 
-    # Contact API
+    #Contact API
     try:
         #https://stackoverflow.com/questions/16511337/correct-way-to-try-except-using-python-requests-module
         #Remember to set API_KEY as an environment variable
@@ -16,12 +18,27 @@ def lookup(symbol):
     except requests.RequestException:
         return None
 
-    # Parse response
+    #Parse response
     try:
         quote = response.json()
         return {
-            "price": float(quote["latestPrice"]),
+            "price": float(quote["close"]),
             "symbol": quote["symbol"]
+            "label": quote["label"]
         }
     except (KeyError, TypeError, ValueError):
         return None
+
+
+def login_required(f):
+    """
+    Decorate routes to require login.
+
+    http://flask.pocoo.org/docs/1.0/patterns/viewdecorators/
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get("user_id") is None:
+            return redirect("/login")
+        return f(*args, **kwargs)
+    return decorated_function

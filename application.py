@@ -10,7 +10,11 @@ app = FLask(__name__)
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
-# Ensure responses aren't cached after every request
+# Ensure responses aren't cached after every API request
+# https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
+# https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Pragma
+# https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expires
+# https://flask.palletsprojects.com/en/2.0.x/api/#flask.Flask.after_request
 @app.after_request
 def after_request(response):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"

@@ -1,9 +1,25 @@
 {% extends "layout.html" %}
 {% block title %}Page Not Found{% endblock %}
 {% block body %}
-<h1>Page Not Found</h1>
-  <p>What you were looking for is just not there.<p>
-      <a href="{{ url_for('index') }}">go somewhere nice</a>
+<h1>Whoops! You've encountered an error.</h1>
+<h2>Error code: {{ code }}</h2>
+<p>
+    <!--
+        TODO return the message and error code
+        give the user the option to go back or give a link to the index
+    -->
+
+    <br>
+</p>
+<!--
+    https://www.w3schools.com/jsref/met_his_back.asp
+-->
+<button onclick="goBack()">Previous page</button>
+<script>
+    function goBack() {
+      window.history.back();
+    }
+</script>
 {% endblock %}
 <!--
     https://flask.palletsprojects.com/en/2.0.x/errorhandling/

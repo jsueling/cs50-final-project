@@ -1,14 +1,11 @@
 {% extends "layout.html" %}
-{% block title %}Page Not Found{% endblock %}
+{% block title %}Error{% endblock %}
 {% block body %}
 <h1>Whoops! You've encountered an error.</h1>
 <h2>Error code: {{ code }}</h2>
 <p>
-    <!--
-        TODO return the message and error code
-        give the user the option to go back or give a link to the index
-    -->
-
+    <br>
+    {{ message }}
     <br>
 </p>
 <!--

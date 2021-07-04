@@ -37,9 +37,37 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # https://flask.palletsprojects.com/en/2.0.x/templating/#registering-filters
-app.jinja_env.filters["usd"] = usd
 # This filter is now registered for use in html files
+app.jinja_env.filters["usd"] = usd
+
+# TODO setup a postgres db file to be referred to
+# db = 
+
+# set API_KEY= for windows
+if not os.environ.get("API_KEY"):
+    raise RuntimeError("API_KEY not set")
 
 @app.route("/")
 def index():
+    # For a user that has used the website (easiest test is to check for rows in SQL table) I want
+    # to return to them a list of their portfolios
     return render_template("index.html")
+
+@app.route("/register")
+def register():
+    return render_template("register.html")
+
+@app.route("/login")
+def login():
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+
+@app.route("/portfolio")
+def portfolio():
+    # TODO If the user has previously used the website I want to return to them a list of their portfolios
+    # which they can click on to see and edit
+    return render_template("portfolio.html")

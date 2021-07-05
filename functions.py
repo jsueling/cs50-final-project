@@ -17,6 +17,7 @@ def lookup(symbol):
         # https://stackoverflow.com/questions/16511337/correct-way-to-try-except-using-python-requests-module
         api_key = os.environ.get("API_KEY")
         date_input = #TODO YYYYMMDD format
+        # https://www.quora.com/Should-dates-be-saved-as-datetime-objects-or-strings-in-a-database
         response = requests.get(f"https://sandbox.iexapis.com/stable/stock/{urllib.parse.quote_plus(symbol)}/chart/date/{date_input}?token={api_key}&chartByDay=true")
         response.raise_for_status()
     except requests.RequestException:

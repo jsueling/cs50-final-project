@@ -41,16 +41,31 @@ Session(app)
 app.jinja_env.filters["usd"] = usd
 
 # TODO setup a postgres db file to be referred to
-# db = 
+# db = #https://devcenter.heroku.com/articles/getting-started-with-python#provision-a-database
+# https://data.heroku.com/datastores/c27215db-81e8-4cd9-a1bb-f5d89a6b7949#administration
+# Access the database using these keys
+# Setup tables I need
+# Find a way to reference back to the db i.e. db = SQL("sqlite:///finance.db")
+# Tables: users: user_id
+# CREATE UNIQUE INDEX 'username' ON "users" ("username");
+# We must have unique usernames or there is potential to hack other accounts
+# when user logs in the program will either retrieve the first row which has the username or there will be an error
+# both are bad outcomes for the user
+# Best practice: for unique username, check against the hash else reject
 
 # set API_KEY= for windows
+# TODO https://stackoverflow.com/questions/28323666/setting-environment-variables-in-heroku-for-flask-app
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
 
 @app.route("/")
+@login_required
 def index():
     # For a user that has used the website (easiest test is to check for rows in SQL table) I want
     # to return to them a list of their portfolios
+    id = session["user_id"]
+
+
     return render_template("index.html")
 
 @app.route("/register")

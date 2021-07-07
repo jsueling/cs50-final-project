@@ -65,16 +65,34 @@ def index():
     # to return to them a list of their portfolios
     id = session["user_id"]
 
-
     return render_template("index.html")
 
 @app.route("/register")
 def register():
     return render_template("register.html")
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    return render_template("login.html")
+    """Log user in"""
+
+    session.clear()
+
+    if request.method =="POST":
+        if not request.form.get("username"):
+            return error_page("You must enter a username.", 403)
+
+        elif not request.form.get("password"):
+            return error_page("You must enter a password.", 403)
+
+        # If user connects for the first time (without a portfolio) we direct them to add a portfolio
+        # 
+        # db.execute()
+        # if db.execute() == :
+        #   return render_template("/add")
+        # else:
+        #   return render_template("/")
+    else:
+        return render_template("login.html")
 
 @app.route("/logout")
 def logout():

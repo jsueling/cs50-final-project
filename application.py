@@ -1,5 +1,7 @@
 import os
+import psycopg2
 
+from config import config
 from flask import Flask, render_template, redirect, request, session
 from flask_session import Session
 from tempfile import mkdtemp

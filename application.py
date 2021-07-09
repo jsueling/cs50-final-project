@@ -6,6 +6,7 @@ from flask import Flask, render_template, redirect, request, session
 from flask_session import Session
 from tempfile import mkdtemp
 from functions import error_page, login_required, lookup, usd
+from werkzeug.security import check_password_hash, generate_password_hash
 
 # Setup the flask app
 app = Flask(__name__)
@@ -82,30 +83,114 @@ def index():
 
     return render_template("index.html")
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    return render_template("register.html")
+    """Register user"""
+
+    sesssion.clear()
+
+    # User submitting register form
+    if request.method == "POST":
+
+        # User inputs
+        username = request.form.get("username")
+        password = request.form.get("password")
+        confirmation = request.form.get("confirmation")
+
+        # Form checks
+        if not username:
+            return error_page("Please enter a username")
+        
+        if not password:
+            return error_page("Please enter a password")
+
+        if password != confirmation:
+            return error_page("Passwords do not match")
+
+        # Connected
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur =  conn.cursor()
+
+        cur.execute("SELECT * FROM users WHERE username = (%s);", (username))
+        rows = cur.fetchall()
+
+        # Database check
+        if len(rows) == 1:
+            return error_page("This username is taken, try another username")
+
+        # Hash user input password
+        hashed_password = generate_password_hash(password)
+
+        # Passed error checks, password hashed
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s);", (username, hashed_password))
+        
+        # Instead of redirecting to login we can be efficient and redirect to the index
+        cur.execute("SELECT * FROM users WHERE username = (%s);", (username))
+        rows = cur.fetchall()
+        
+        # After first storing id in session
+        # Which satisfies our login_required function
+        session["user_id"] = rows[0]["id"]
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return redirect("/")
+    
+    # User requesting the page (GET)
+    else:
+        return render_template("register.html")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Log user in"""
 
+    # Clear user_id
     session.clear()
 
+    # User is submitting the form on trying to login (POST)
     if request.method =="POST":
+
+        # Form checks
         if not request.form.get("username"):
-            return error_page("You must enter a username.", 403)
+            return error_page("You must enter a username", 403)
 
         elif not request.form.get("password"):
-            return error_page("You must enter a password.", 403)
+            return error_page("You must enter a password", 403)
 
-        # If user connects for the first time (without a portfolio) we direct them to add a portfolio
-        # 
-        # db.execute()
-        # if db.execute() == :
-        #   return render_template("/add")
-        # else:
-        #   return render_template("/")
+        username =  request.form.get("username")
+
+        # https://www.psycopg.org/docs/usage.html
+        # Set paramaters of database connection from the config file
+        params = config()
+        # Open connection
+        conn = pscyop2.connect(**params)
+        # Open a cursor
+        cur = conn.cursor()
+        # Execute my query
+        cur.execute("SELECT * FROM users WHERE username = (%s);", (username))
+        # Store the results
+        rows = cur.fetchall()
+        # close the cursor and the connection
+        cur.close()
+        conn.close()
+
+        # Database checks
+        if len(rows) != 1:
+            return error_page("An account with this username does not exist", 403)
+
+        if not check_password_hash(rows[0]["password"], request.form.get("password")):
+            return error_page("Incorrect password", 403)
+        
+        # Store current user ID
+        session["user_id"] = rows[0]["id"]
+
+        # Redirect the user on successful login
+        return redirect("/")
+
+    # User wants to GET the page
     else:
         return render_template("login.html")
 

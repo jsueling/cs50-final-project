@@ -55,7 +55,20 @@ app.jinja_env.filters["usd"] = usd
 # both are bad outcomes for the user
 # Best practice: for unique username, check against the hash else reject
 
+# https://www.postgresqltutorial.com/postgresql-python/connect/
+# https://www.psycopg.org/docs/usage.html
+
+# params = config()
+# conn = psycopg2.connect(**params)
+# cur = conn.cursor()
+# SQL query cur.execute()
+# cur.fetchall()
+# conn.commit() for update insert delete
+# cur.close()
+# conn.close()
+
 # set API_KEY= for windows
+# env file .gitignore
 # TODO https://stackoverflow.com/questions/28323666/setting-environment-variables-in-heroku-for-flask-app
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")

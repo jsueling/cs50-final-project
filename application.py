@@ -79,9 +79,22 @@ if not os.environ.get("API_KEY"):
 def index():
     # For a user that has used the website (easiest test is to check for rows in SQL table) I want
     # to return to them a list of their portfolios
+
     id = session["user_id"]
 
-    return render_template("index.html")
+    params = config()
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+    cur.execute("SELECT portfolio_name FROM shares where id = (%s) GROUP BY portfolio_name;", (id))
+    names = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    if not names:
+        return redirect("/create")
+
+    else:
+        return render_template("index.html", names=names)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -94,6 +107,8 @@ def register():
 
         # User inputs
         username = request.form.get("username")
+        # Case insensitive username for a smoother user experience
+        lower_username =  username.lower()
         password = request.form.get("password")
         confirmation = request.form.get("confirmation")
 
@@ -112,7 +127,7 @@ def register():
         conn = psycopg2.connect(**params)
         cur =  conn.cursor()
 
-        cur.execute("SELECT * FROM users WHERE username = (%s);", (username))
+        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username))
         rows = cur.fetchall()
 
         # Database check
@@ -123,10 +138,10 @@ def register():
         hashed_password = generate_password_hash(password)
 
         # Passed error checks, password hashed
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s);", (username, hashed_password))
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s);", (lower_username, hashed_password))
         
         # Instead of redirecting to login we can be efficient and redirect to the index
-        cur.execute("SELECT * FROM users WHERE username = (%s);", (username))
+        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username))
         rows = cur.fetchall()
         
         # After first storing id in session
@@ -153,24 +168,27 @@ def login():
     # User is submitting the form on trying to login (POST)
     if request.method =="POST":
 
+        # User inputs
+        username = request.form.get("username")
+        lower_username = username.lower()
+        password = request.form.get("password")
+
         # Form checks
-        if not request.form.get("username"):
+        if not username:
             return error_page("You must enter a username", 403)
 
-        elif not request.form.get("password"):
+        if not password:
             return error_page("You must enter a password", 403)
-
-        username =  request.form.get("username")
 
         # https://www.psycopg.org/docs/usage.html
         # Set paramaters of database connection from the config file
         params = config()
         # Open connection
-        conn = pscyop2.connect(**params)
+        conn = psycopg2.connect(**params)
         # Open a cursor
         cur = conn.cursor()
         # Execute my query
-        cur.execute("SELECT * FROM users WHERE username = (%s);", (username))
+        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username))
         # Store the results
         rows = cur.fetchall()
         # close the cursor and the connection
@@ -181,13 +199,13 @@ def login():
         if len(rows) != 1:
             return error_page("An account with this username does not exist", 403)
 
-        if not check_password_hash(rows[0]["password"], request.form.get("password")):
+        if not check_password_hash(rows[0]["password"], password):
             return error_page("Incorrect password", 403)
         
-        # Store current user ID
+        # Passed Checks > Store current user ID
         session["user_id"] = rows[0]["id"]
 
-        # Redirect the user on successful login
+        # Successful login
         return redirect("/")
 
     # User wants to GET the page
@@ -199,8 +217,22 @@ def logout():
     session.clear()
     return redirect("/")
 
-@app.route("/portfolio")
-def portfolio():
-    # TODO If the user has previously used the website I want to return to them a list of their portfolios
-    # which they can click on to see and edit
+@app.route("/create")
+def create():
+    # TODO
+    return ("create.html")
+
+@app.route("/myportfolios/<portfolio_name>"):
+def myportfolios(portfolio_name):
+
+    id = session["user_id"]
+
+    params = config()
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+    cur.execute("SELECT symbol, SUM(purchase_quantity), purchase_date FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY symbol, purchase_date;", (id, portfolio_name))
+    portfolio = cur.fetchall()
+    cur.close()
+    conn.close()
+
     return render_template("portfolio.html")

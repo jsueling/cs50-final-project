@@ -5,7 +5,7 @@ from config import config
 from flask import Flask, render_template, redirect, request, session
 from flask_session import Session
 from tempfile import mkdtemp
-from functions import error_page, login_required, lookup, usd
+from functions import error_page, login_required, usd
 from werkzeug.security import check_password_hash, generate_password_hash
 
 # Setup the flask app
@@ -40,7 +40,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # https://flask.palletsprojects.com/en/2.0.x/templating/#registering-filters
-# This filter is now registered for use in html files
+# This filter is now registered for use in templates
 app.jinja_env.filters["usd"] = usd
 
 # TODO setup a postgres db file to be referred to
@@ -73,6 +73,35 @@ app.jinja_env.filters["usd"] = usd
 # TODO https://stackoverflow.com/questions/28323666/setting-environment-variables-in-heroku-for-flask-app
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
+
+
+# https://flask.palletsprojects.com/en/2.0.x/templating/#registering-filters
+@app.context_processor
+def utility_processor():
+    def lookup(symbol, input_date):
+        """Look up quote for symbol."""
+        
+        # Contact API
+        try:
+            # https://stackoverflow.com/questions/16511337/correct-way-to-try-except-using-python-requests-module
+            api_key = os.environ.get("API_KEY")
+            date_input = #TODO YYYYMMDD format
+            response = requests.get(f"https://sandbox.iexapis.com/stable/stock/{urllib.parse.quote_plus(symbol)}/chart/date/{date_input}?token={api_key}&chartByDay=true")
+            response.raise_for_status()
+        except requests.RequestException:
+            return None
+        
+        # Parse response into a json object only extracting the information we need
+        try:
+            quote = response.json()
+            return {
+                "price": float(quote["close"]),
+                "symbol": quote["symbol"]
+                "label": quote["label"]
+            }
+        except (KeyError, TypeError, ValueError):
+            return None
+
 
 @app.route("/")
 @login_required
@@ -234,5 +263,13 @@ def myportfolios(portfolio_name):
     portfolio = cur.fetchall()
     cur.close()
     conn.close()
+
+
+
+    for row in portfolio:
+        date_input = row["purchase_date"].replace("-","")
+
+
+
 
     return render_template("portfolio.html")

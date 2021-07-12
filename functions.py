@@ -9,32 +9,6 @@ def error_page(message, code=400)
     """Returns a message on the error and what the user should do"""
     return render_template("error_page.html", code=code, message=message), code
 
-def lookup(symbol):
-    """Look up quote for symbol."""
-
-    # Contact API
-    try:
-        # https://stackoverflow.com/questions/16511337/correct-way-to-try-except-using-python-requests-module
-        api_key = os.environ.get("API_KEY")
-        date_input = #TODO YYYYMMDD format
-        # https://www.quora.com/Should-dates-be-saved-as-datetime-objects-or-strings-in-a-database
-        response = requests.get(f"https://sandbox.iexapis.com/stable/stock/{urllib.parse.quote_plus(symbol)}/chart/date/{date_input}?token={api_key}&chartByDay=true")
-        response.raise_for_status()
-    except requests.RequestException:
-        return None
-
-    # Parse response into a json object only extracting the information we need
-    try:
-        quote = response.json()
-        return {
-            "price": float(quote["close"]),
-            "symbol": quote["symbol"]
-            "label": quote["label"]
-        }
-    except (KeyError, TypeError, ValueError):
-        return None
-
-
 def login_required(f):
     """
     Decorate routes to require login.

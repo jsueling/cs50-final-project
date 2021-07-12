@@ -218,11 +218,13 @@ def logout():
     return redirect("/")
 
 @app.route("/create")
+@login_required
 def create():
     # TODO
     return ("create.html")
 
-@app.route("/myportfolios/<portfolio_name>"):
+@app.route("/myportfolios/<portfolio_name>")
+@login_required
 def myportfolios(portfolio_name):
 
     id = session["user_id"]
@@ -235,7 +237,4 @@ def myportfolios(portfolio_name):
     cur.close()
     conn.close()
 
-    for row in portfolio:
-        date_input = row["purchase_date"].replace("-","")
-
-    return render_template("portfolio.html")
+    return render_template("portfolio.html", portfolio=portfolio, lookup=lookup)

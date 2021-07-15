@@ -237,19 +237,43 @@ def myportfolios(portfolio_name):
     cur.close()
     conn.close()
 
+    x = []
+    y = []
+
     for row in portfolio:
         # Revisit to look for correct types here for dates
-        purchase_price = lookup(row["symbol"], row["purchase_date"].strftime("%Y%m%d"))["price"]
-        total_cost = price*row["sum_shares"]
+        date_nospace = row["purchase_date"].strftime("%Y%m%d")
+        purchase_price = lookup(row["symbol"], date_nospace)["price"]
+        gain_loss = (purchase_price - current_price)*row["sum_shares"]
 
-        x = []
-        y = []
+        unique_id = row["symbol"] + date_nospace
 
-        if current_price > purchase_price:
-            x.append
+        z = [{'unique_id': unique_id}, {'gain_loss': gain_loss}]
+
+        if gain_loss >= 0:
+            x += z
 
         else:
-            y.append
+            y += z
+    
+    # https://www.tutorialspoint.com/How-to-sort-the-objects-in-a-list-in-Python
+    def my_key(obj):
+        return obj['gain_loss']
 
+    # 2 arrays of objects sorted
+    # x is the positive array, when sorted with reverse=True: [16, 10, 9, 5, 4 , 1]
+    x = x.sort(key=my_key, reverse=True)
 
-    return render_template("portfolio.html", portfolio=portfolio, lookup=lookup)
+    # y negative array, when sorted: [-1, -5, -10, -24, -41]
+    y = y.sort(key=my_key, reverse=True)
+
+    i = len(y) - 1
+
+    if x[0]["gain_loss"] >= abs(y[i]["gain_loss"]):
+        j = x[0]["gain_loss"]
+    else:
+        j = y[i]["gain_loss"]
+
+    # I pass the largest element of both arrays
+
+    return render_template("portfolio.html", portfolio=portfolio, lookup=lookup, x=x, y=y, j=j)

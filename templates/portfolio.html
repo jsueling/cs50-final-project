@@ -9,13 +9,26 @@
 
 <div id="full_bar">
     <div id="loss_bar">
-        {% for x in array_1 %}
-        <div id="{{ <!-- TODO --> }}" style="width: {{ <!-- TODO --> }}"></div>
+        <!--
+            Problems: Deciding how the divs are scaled
+            If the gain_loss that is largest is always the same size on the screen will it look strange?
+            Not if the user is comparing only against a singular portfolio at once
+            A loss of 10% and a gain of 1000% will look the same drawn on the page if they are the largest items
+            Why could it be good?
+            Excessively small or excessively large gains in a single portfolio look odd/ not visible to the user
+
+            Test: Set an arbitrary value for size of largest
+            Scale all elements against it
+            Put those values in the array
+            Feed arrays into the html
+        -->
+        {% for i in x %}
+        <div id="{{ i["unique_id"] }}" style="width: {{ <!-- TODO --> }}"></div>
         {% endfor %}
     </div>
     <div id="gain_bar">
-        {% for x in array_2 %}
-        <div id="{{ <!-- TODO --> }}" style="width: {{ <!-- TODO --> }}"></div>
+        {% for i in y %}
+        <div id="{{ i["unique_id"] }}" style="width: {{ <!-- TODO --> }}"></div>
         {% endfor %}
     </div>
 </div>

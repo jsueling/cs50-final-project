@@ -232,9 +232,24 @@ def myportfolios(portfolio_name):
     params = config()
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
-    cur.execute("SELECT symbol, SUM(purchase_quantity), purchase_date FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY symbol, purchase_date;", (id, portfolio_name))
+    cur.execute("SELECT symbol, SUM(purchase_quantity) AS sum_shares, purchase_date FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY symbol, purchase_date;", (id, portfolio_name))
     portfolio = cur.fetchall()
     cur.close()
     conn.close()
+
+    for row in portfolio:
+        # Revisit to look for correct types here for dates
+        purchase_price = lookup(row["symbol"], row["purchase_date"].strftime("%Y%m%d"))["price"]
+        total_cost = price*row["sum_shares"]
+
+        x = []
+        y = []
+
+        if current_price > purchase_price:
+            x.append
+
+        else:
+            y.append
+
 
     return render_template("portfolio.html", portfolio=portfolio, lookup=lookup)

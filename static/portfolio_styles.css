@@ -1,0 +1,23 @@
+#full_bar {
+    /* TODO */
+    display: flex;
+}
+
+#gain_bar {
+    /* TODO */
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    width: 50%;
+}
+
+#loss_bar {
+    /* TODO 
+    height:
+    padding:
+    */
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-end;
+    width: 50%
+}

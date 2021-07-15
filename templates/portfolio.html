@@ -4,6 +4,23 @@
 
 {% endblock %}
 
+{{ portfolio }}
+{{ lookup }}
+
+<div id="full_bar">
+    <div id="loss_bar">
+        {% for x in array_1 %}
+        <div id="{{ <!-- TODO --> }}" style="width: {{ <!-- TODO --> }}"></div>
+        {% endfor %}
+    </div>
+    <div id="gain_bar">
+        {% for x in array_2 %}
+        <div id="{{ <!-- TODO --> }}" style="width: {{ <!-- TODO --> }}"></div>
+        {% endfor %}
+    </div>
+</div>
+
+
 {% block main %}
 
 {% endblock %}

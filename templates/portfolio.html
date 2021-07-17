@@ -4,50 +4,55 @@
 
 {% endblock %}
 
-{{ portfolio }}
-{{ lookup }}
-
 <div id="full_bar">
-    <div id="loss_bar">
-        <!--
-            Problems: Deciding how the divs are scaled
-            If the gain_loss that is largest is always the same size on the screen will it look strange?
-            Not if the user is comparing only against a singular portfolio at once
-            A loss of 10% and a gain of 1000% will look the same drawn on the page if they are the largest items
-            Why could it be good?
-            Excessively small or excessively large gains in a single portfolio look odd/ not visible to the user
 
-            from application.py:
-            2 sorted arrays of objects x, y
-                which contain key ID for the transaction in sharedate form
-                and gain_loss in $ 
-            The largest gain_loss in $ form
+    <!--
+        Problems deciding how the divs are scaled
+        If the gain_loss that is largest is always the same size on the screen will it look strange?
+        A loss of 10% and a gain of 1000% will look the same drawn on the page if they are the largest items
+        Not if the user is comparing only against a single portfolio at once
+        Why could it be good?
+        Excessively small/large gains/losses in a single portfolio look odd/not visible to the user
+        but also the largest gain or loss is the most important detail to the user in tracking his/her progress
+        From application.py:
+        1 sorted arrays of objects, x
+            which contain key ID for the transaction in sharedate form
+            and gain_loss in $
+        The largest gain_loss in $ form, y
 
-            What the functions do:
-            Display all the results of a portfolio first separated by gain or loss
-            then ordered by most to least gained/lost for the respective bars
-            they have properties flex start and flex end so that they will grow from the center
-            all div elements are uniquely identified and still retain their $ gain/loss
-            but to simplify I divide both arrays by the largest object to get a percentage
-            that they use for width. The largest element will have width 50%
-        -->
-        {% for i in x %}
+        What the functions do:
+        Displays all the results visually of a portfolio first separated by gain or loss
+        then ordered by most to least gained/lost
+        by creating empty divs all scaled to a parent (which is the largest gain/loss 
+        which has width 50%) to show relative performance
+        all div elements are uniquely identified and still retain their $ gain/loss
+    -->
 
-        k = i["gain_loss"]
-        l = (k/y)*50
+    {% for i in x %}
 
-        <div class="gain_element" id="{{ i["unique_id"] }}" style="width: {{ round(l, 1) }}%"></div>
-        {% endfor %}
-    </div>
-    <div id="gain_bar">
-        {% for i in y %}
+    k = i["gain_loss"]
 
-        k = i["gain_loss"]
-        l = (k/y)*(-50)
+    {% if k > 0 %}
 
-        <div class="loss_element" id="{{ i["unique_id"] }}" style="width: {{ round(l, 1) }}%"></div>
-        {% endfor %}
-    </div>
+    <!--
+        Scale to the largest element, y
+    -->
+    l = (k/y)*50
+
+    <div class="gain_element" id="{{ i["unique_id"] }}" style="width: {{ round(l, 1) }}%;"></div>
+
+    {% else %}
+    
+    <!--
+        Don't want negative widths
+    -->
+    l = (k/y)*(-50)
+
+    <div class="loss_element" id="{{ i["unique_id"] }}" style="width: {{ round(l, 1) }}%;"></div>
+
+    {% endif %}
+
+    {% endfor %}
 </div>
 
 

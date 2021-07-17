@@ -1,33 +1,18 @@
 #full_bar {
-    /* TODO */
+    /* https://css-tricks.com/snippets/css/a-guide-to-flexbox/ */
     display: flex;
     width: 80%;
     margin: auto;
-}
-
-#gain_bar {
-    /* TODO */
-    display: flex;
-    align-items: stretch;
-    justify-content: flex-start;
-    width: 50%;
-}
-
-#loss_bar {
-    /* TODO 
-    height:
-    padding:
-    */
-    display: flex;
-    align-items: stretch;
-    justify-content: flex-end;
-    width: 50%;
+    justify-content: center;
+    align-items: stretch
 }
 
 .gain_element {
     background-color: rgb(90, 255, 90);
+    margin: 0 2px 0 0;
 }
 
 .loss_element {
     background-color: rgb(255, 90, 90);
+    margin: 0 2px 0 0;
 }

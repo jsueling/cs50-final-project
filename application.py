@@ -7,6 +7,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from functions import error_page, login_required, lookup, usd
 from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import time
 
 # Setup the flask app
 app = Flask(__name__)
@@ -238,42 +239,36 @@ def myportfolios(portfolio_name):
     conn.close()
 
     x = []
-    y = []
 
     for row in portfolio:
         # Revisit to look for correct types here for dates
-        date_nospace = row["purchase_date"].strftime("%Y%m%d")
-        purchase_price = lookup(row["symbol"], date_nospace)["price"]
+        # Functions.py takes date inputs and formats it as string YYYYMMDD for the URL
+        purchase_price = lookup(row["symbol"], row["purchase_date"])["price"]
+        current_price = loookup(row["symbol"], date.today())["price"]
         gain_loss = (purchase_price - current_price)*row["sum_shares"]
 
+        date_nospace = row["purchase_date"].strftime("%Y%m%d")
         unique_id = row["symbol"] + date_nospace
 
         z = [{'unique_id': unique_id, 'gain_loss': gain_loss}]
 
-        if gain_loss >= 0:
-            x += z
-
-        else:
-            y += z
+        x += z
     
     # https://www.tutorialspoint.com/How-to-sort-the-objects-in-a-list-in-Python
     def my_key(obj):
         return obj['gain_loss']
 
     # 2 arrays of objects sorted
-    # x is the positive array, when sorted with reverse=True: [16, 10, 9, 5, 4 , 1]
+    # x when sorted [{'unique_id': 'AAPL20210717', 'gain_loss': 16}, ...10, 9, 5, 4 , 1, 0, -1, -2, -14]
     x = x.sort(key=my_key, reverse=True)
 
-    # y negative array, when sorted: [-1, -5, -10, -24, -41]
-    y = y.sort(key=my_key, reverse=True)
+    i = len(x) - 1
 
-    i = len(y) - 1
-
-    if x[0]["gain_loss"] >= abs(y[i]["gain_loss"]):
-        j = x[0]["gain_loss"]
+    if x[0]["gain_loss"] >= abs(x[i]["gain_loss"]):
+        y = x[0]["gain_loss"]
     else:
-        j = abs(y[i]["gain_loss"])
+        y = abs(x[i]["gain_loss"])
 
     # I pass the largest element of both arrays
 
-    return render_template("portfolio.html", portfolio=portfolio, lookup=lookup, x=x, y=y, j=j)
+    return render_template("portfolio.html", x=x, y=y)

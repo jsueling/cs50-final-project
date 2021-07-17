@@ -17,18 +17,35 @@
             Why could it be good?
             Excessively small or excessively large gains in a single portfolio look odd/ not visible to the user
 
-            Test: Set an arbitrary value for size of largest
-            Scale all elements against it
-            Put those values in the array
-            Feed arrays into the html
+            from application.py:
+            2 sorted arrays of objects x, y
+                which contain key ID for the transaction in sharedate form
+                and gain_loss in $ 
+            The largest gain_loss in $ form
+
+            What the functions do:
+            Display all the results of a portfolio first separated by gain or loss
+            then ordered by most to least gained/lost for the respective bars
+            they have properties flex start and flex end so that they will grow from the center
+            all div elements are uniquely identified and still retain their $ gain/loss
+            but to simplify I divide both arrays by the largest object to get a percentage
+            that they use for width. The largest element will have width 50%
         -->
         {% for i in x %}
-        <div id="{{ i["unique_id"] }}" style="width: {{ <!-- TODO --> }}"></div>
+
+        k = i["gain_loss"]
+        l = (k/y)*50
+
+        <div class="gain_element" id="{{ i["unique_id"] }}" style="width: {{ round(l, 1) }}%"></div>
         {% endfor %}
     </div>
     <div id="gain_bar">
         {% for i in y %}
-        <div id="{{ i["unique_id"] }}" style="width: {{ <!-- TODO --> }}"></div>
+
+        k = i["gain_loss"]
+        l = (k/y)*(-50)
+
+        <div class="loss_element" id="{{ i["unique_id"] }}" style="width: {{ round(l, 1) }}%"></div>
         {% endfor %}
     </div>
 </div>

@@ -1,6 +1,8 @@
 #full_bar {
     /* TODO */
     display: flex;
+    width: 80%;
+    margin: auto;
 }
 
 #gain_bar {
@@ -19,5 +21,13 @@
     display: flex;
     align-items: stretch;
     justify-content: flex-end;
-    width: 50%
+    width: 50%;
+}
+
+.gain_element {
+    background-color: rgb(90, 255, 90);
+}
+
+.loss_element {
+    background-color: rgb(255, 90, 90);
 }

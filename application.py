@@ -248,7 +248,7 @@ def myportfolios(portfolio_name):
 
         unique_id = row["symbol"] + date_nospace
 
-        z = [{'unique_id': unique_id}, {'gain_loss': gain_loss}]
+        z = [{'unique_id': unique_id, 'gain_loss': gain_loss}]
 
         if gain_loss >= 0:
             x += z
@@ -272,7 +272,7 @@ def myportfolios(portfolio_name):
     if x[0]["gain_loss"] >= abs(y[i]["gain_loss"]):
         j = x[0]["gain_loss"]
     else:
-        j = y[i]["gain_loss"]
+        j = abs(y[i]["gain_loss"])
 
     # I pass the largest element of both arrays
 

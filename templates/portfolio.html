@@ -1,9 +1,10 @@
 {% extends "layout.html" %}
 
 {% block title %}
-
+{{ portfolio_name }}
 {% endblock %}
-
+<h1>{{ portfolio_name }}</h1>
+<br>
 <div id="full_bar">
 
     <!--
@@ -34,21 +35,18 @@
 
     {% if k > 0 %}
 
-    <!--
-        Scale to the largest element, y
-    -->
+    <!-- If gain or loss:
+         Scale to the largest element, y -->
     l = (k/y)*50
 
-    <div class="gain_element" id="{{ i["unique_id"] }}" style="width: {{ round(l, 1) }}%;"></div>
+    <div class="gain_element" id="{{ i['unique_id'] }}" style="width: {{ round(l, 1) }}%;"></div>
 
     {% else %}
     
-    <!--
-        Don't want negative widths
-    -->
+    <!-- Don't want negative widths -->
     l = (k/y)*(-50)
 
-    <div class="loss_element" id="{{ i["unique_id"] }}" style="width: {{ round(l, 1) }}%;"></div>
+    <div class="loss_element" id="{{ i['unique_id'] }}" style="width: {{ round(l, 1) }}%;"></div>
 
     {% endif %}
 

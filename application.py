@@ -2,12 +2,13 @@ import os
 import psycopg2
 
 from config import config
-from flask import Flask, render_template, redirect, request, session
+from flask import Flask, flash, render_template, redirect, request, session
 from flask_session import Session
 from tempfile import mkdtemp
 from functions import error_page, login_required, lookup, usd
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import time
+from dotenv import load_dotenv
 
 # Setup the flask app
 app = Flask(__name__)
@@ -69,9 +70,11 @@ app.jinja_env.filters["usd"] = usd
 # cur.close()
 # conn.close()
 
-# set API_KEY= for windows
-# env file .gitignore
-# TODO https://stackoverflow.com/questions/28323666/setting-environment-variables-in-heroku-for-flask-app
+# Something to look at maybe
+# https://stackoverflow.com/questions/28323666/setting-environment-variables-in-heroku-for-flask-app
+
+# https://www.twilio.com/blog/environment-variables-python
+load_dotenv("keys.env")
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
 
@@ -153,6 +156,7 @@ def register():
         cur.close()
         conn.close()
 
+        flash(f"Registered and logged in as {username} successfully!")
         return redirect("/")
     
     # User requesting the page (GET)
@@ -206,6 +210,7 @@ def login():
         # Passed Checks > Store current user ID
         session["user_id"] = rows[0]["id"]
 
+        flash(f"Logged in as {username} successfully!")
         # Successful login
         return redirect("/")
 
@@ -214,8 +219,11 @@ def login():
         return render_template("login.html")
 
 @app.route("/logout")
+@login_required
+# User must be logged in to logout
 def logout():
     session.clear()
+    flash("Logged out successfully!")
     return redirect("/")
 
 @app.route("/create")
@@ -271,4 +279,4 @@ def myportfolios(portfolio_name):
 
     # I pass the largest element of both arrays
 
-    return render_template("portfolio.html", x=x, y=y)
+    return render_template("portfolio.html", x=x, y=y, portfolio_name=portfolio_name)

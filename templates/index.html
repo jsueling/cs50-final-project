@@ -1,16 +1,15 @@
 {% extends "layout.html" %}
 
 {% block title %}
+Index
 {% endblock %}
 
 {% block main %}
 <h1>My portfolios</h1>
 <br>
 <ul style="list-style-type:none;">
-    <!--
-        https://flask.palletsprojects.com/en/2.0.x/quickstart/#url-building
-    -->
-    {% for row in names%}
+    <!-- https://flask.palletsprojects.com/en/2.0.x/quickstart/#url-building -->
+    {% for row in names %}
     <li href = "{{ url_for('myportfolios', portfolio_name=row[portfolio_name]) }}">{{ row[portfolio_name] }}</li>
     {% endfor %}
 </ul>

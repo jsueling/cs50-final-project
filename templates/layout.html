@@ -24,6 +24,7 @@
 
         <title>{% block title %}{% endblock %} - MyPortfolios</title>
     </head>
+    
     <body>
         <nav class="nav navbar-expand-md fixed-top navbar-dark bg-dark text-white">
             <a class="navbar-brand ml-3 mb-1"><strong>MyPortfolios</strong></a>
@@ -56,18 +57,27 @@
         <!-- https://www.youtube.com/watch?v=qbnqNWXf_tU for loop multiple flashed messages for msg in get_flashed_messages() -->
         <!-- https://getbootstrap.com/docs/4.0/components/alerts/ -->
         <!-- https://stackoverflow.com/questions/42947983/bootstrap-navbar-fixed-top-class-not-working -->
-        {% if get_flashed_messages() %}
-            <header>
-                <div class="alert alert-success border text-center fade show" role="alert">
-                    {{ get_flashed_messages() | join(" ") }}
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-            </header>
-        {% endif %}
+        
 
-        <main>
+        <!-- Support for Multiple flashed messages which have separate buttons -->
+        <!-- https://flask.palletsprojects.com/en/2.0.x/patterns/flashing/ -->
+        <!-- Can change categories depending on the messages I want to show -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <header>
+                        <div class="alert alert-success border text-center fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    </header>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <main class="container-p5">
             {% block main %}{% endblock %}
         </main>
         

@@ -6,7 +6,7 @@ from flask import redirect, session, render_template
 from functools import wraps
 from datetime import time
 
-def error_page(message, code=400)
+def error_page(message, code=400):
     """Returns a message on the error and what the user should do"""
     return render_template("error_page.html", code=code, message=message), code
 

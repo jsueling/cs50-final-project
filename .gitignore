@@ -1,3 +1,4 @@
 keys.env
 database.ini
 __pycache__
+env

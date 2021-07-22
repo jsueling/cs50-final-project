@@ -31,7 +31,7 @@ def lookup(symbol, date_input):
         quote = response.json()
         return {
             "price": float(quote["close"]),
-            "symbol": quote["symbol"]
+            "symbol": quote["symbol"],
             "label": quote["label"]
         }
     except (KeyError, TypeError, ValueError):

@@ -104,7 +104,7 @@ def index():
 def register():
     """Register user"""
 
-    sesssion.clear()
+    session.clear()
 
     # User submitting register form
     if request.method == "POST":
@@ -193,7 +193,7 @@ def login():
         # Open a cursor
         cur = conn.cursor()
         # Execute my query
-        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username))
+        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username,))
         # Store the results
         rows = cur.fetchall()
         # close the cursor and the connection
@@ -204,7 +204,7 @@ def login():
         if len(rows) != 1:
             return error_page("An account with this username does not exist", 403)
 
-        if not check_password_hash(rows[0]["password"], password):
+        if not check_password_hash(rows[0][2], password):
             return error_page("Incorrect password", 403)
         
         # Passed Checks > Store current user ID

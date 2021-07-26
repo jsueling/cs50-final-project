@@ -213,8 +213,7 @@ def login():
         
         # Passed Checks > Store current user ID
         session["user_id"] = rows[0][0]
-        if "user_id" in session:
-            print("success")
+        
         flash(f"Logged in as {username} successfully!", "success")
         # Successful login
         return redirect("/")

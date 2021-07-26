@@ -95,6 +95,7 @@ def index():
     conn.close()
 
     if not names:
+        flash("We detected you have no portfolios so you have been redirected here", "primary")
         return redirect("/create")
 
     else:
@@ -156,7 +157,7 @@ def register():
         cur.close()
         conn.close()
 
-        flash(f"Registered and logged in as {username} successfully!")
+        flash(f"Registered and logged in as {username} successfully!", "success")
         return redirect("/")
     
     # User requesting the page (GET)
@@ -209,9 +210,8 @@ def login():
         
         # Passed Checks > Store current user ID
         session["user_id"] = rows[0][0]
-        print(session["user_id"])
         
-        flash(f"Logged in as {username} successfully!")
+        flash(f"Logged in as {username} successfully!", "success")
         # Successful login
         return redirect("/")
 
@@ -224,14 +224,14 @@ def login():
 # User must be logged in to logout
 def logout():
     session.clear()
-    flash("Logged out successfully!")
+    flash("Logged out successfully!", "success")
     return redirect("/")
 
 @app.route("/create")
 @login_required
 def create():
     # TODO
-    return ("create.html")
+    return render_template("create.html")
 
 @app.route("/myportfolios/<portfolio_name>")
 @login_required

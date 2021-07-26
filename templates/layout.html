@@ -65,18 +65,28 @@
                 <!-- Support for Multiple flashed messages which have separate buttons -->
                 <!-- https://flask.palletsprojects.com/en/2.0.x/patterns/flashing/ -->
                 <!-- Can change categories depending on the messages I want to show -->
-                {% with messages = get_flashed_messages() %}
+                <!-- Flash message categories source: https://www.youtube.com/watch?v=lcVdZtVvnnk -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
-                        {% for message in messages %}
-                            <header>
-                                <div class="alert alert-success border text-center fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                            </header>
-                        {% endfor %}
+                        <header>
+                            {% for category, message in messages %}
+                                {% if category == "success" %}
+                                    <div class="alert alert-success border text-center fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                {% elif category == "primary" %}
+                                    <div class="alert alert-primary border text-center fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </header>
                     {% endif %}
                 {% endwith %}
                 <br>

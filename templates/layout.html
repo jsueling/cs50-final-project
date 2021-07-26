@@ -26,63 +26,70 @@
     </head>
     
     <body>
-        <nav class="nav navbar-expand-md fixed-top navbar-dark bg-dark text-white">
-            <a class="navbar-brand ml-3 mb-1"><strong>MyPortfolios</strong></a>
-            <button class="navbar-toggler ml-auto" type="button" data-toggle="collapse" data-target="#target" aria-controls="target" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <!-- https://stackoverflow.com/questions/50028673/changing-active-class-in-bootstrap-navbar-not-staying-in-inherited-django-template -->
-            <div class="collapse navbar-collapse" id="target">
-                {% if session.user_id %}
-                    <ul class="navbar-nav mr-auto pl-5">
-                        <li class="navbar-item"><a class="nav-link" href="/create">Create</a></li>
-                        <li class="navbar-item active"><a class="nav-link" href="/edit">Edit</a></li>
-                        <li class="navbar-item"><a class="nav-link" href="/delete">Delete</a></li>
-                    </ul>
-                    <ul class="navbar-nav ml-auto pl-3">
-                        <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
-                    </ul>
-                {% else %}
-                    <ul class="navbar-nav ml-auto pl-3">
-                        <li class="nav-item"><a class="nav-link" href="/login">Log in</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
-                    </ul>
-                {% endif %}
+        <!-- https://www.freecodecamp.org/news/how-to-keep-your-footer-where-it-belongs-59c6aa05c59c/ -->
+        <div id="page-container">
+            <div id="content-wrap">
+                <nav class="nav navbar-expand-md fixed-top navbar-dark bg-dark text-white">
+                    <a class="navbar-brand ml-3 mb-1"><strong>MyPortfolios</strong></a>
+                    <button class="navbar-toggler ml-auto" type="button" data-toggle="collapse" data-target="#target" aria-controls="target" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    
+                    <!-- https://stackoverflow.com/questions/50028673/changing-active-class-in-bootstrap-navbar-not-staying-in-inherited-django-template -->
+                    <div class="collapse navbar-collapse" id="target">
+                        {% if session.user_id %}
+                            <ul class="navbar-nav mr-auto pl-5">
+                                <li class="navbar-item"><a class="nav-link" href="/create">Create</a></li>
+                                <li class="navbar-item active"><a class="nav-link" href="/edit">Edit</a></li>
+                                <li class="navbar-item"><a class="nav-link" href="/delete">Delete</a></li>
+                            </ul>
+                            <ul class="navbar-nav ml-auto pl-3">
+                                <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
+                            </ul>
+                        {% else %}
+                            <ul class="navbar-nav ml-auto pl-3">
+                                <li class="nav-item"><a class="nav-link" href="/login">Log in</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
+                            </ul>
+                        {% endif %}
+                    </div>
+                </nav>
+                <br>
+                <br>
+                <br>
+                <!-- https://www.youtube.com/watch?v=qbnqNWXf_tU for loop multiple flashed messages for msg in get_flashed_messages() -->
+                <!-- https://getbootstrap.com/docs/4.0/components/alerts/ -->
+                <!-- https://stackoverflow.com/questions/42947983/bootstrap-navbar-fixed-top-class-not-working -->
+                
+
+                <!-- Support for Multiple flashed messages which have separate buttons -->
+                <!-- https://flask.palletsprojects.com/en/2.0.x/patterns/flashing/ -->
+                <!-- Can change categories depending on the messages I want to show -->
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <header>
+                                <div class="alert alert-success border text-center fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            </header>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                <br>
+                <br>
+                <br>
+                <main class="container-p5">
+                    {% block main %}{% endblock %}
+                </main>
             </div>
-        </nav>
-        <br>
-        <br>
-        <br>
-        <!-- https://www.youtube.com/watch?v=qbnqNWXf_tU for loop multiple flashed messages for msg in get_flashed_messages() -->
-        <!-- https://getbootstrap.com/docs/4.0/components/alerts/ -->
-        <!-- https://stackoverflow.com/questions/42947983/bootstrap-navbar-fixed-top-class-not-working -->
-        
 
-        <!-- Support for Multiple flashed messages which have separate buttons -->
-        <!-- https://flask.palletsprojects.com/en/2.0.x/patterns/flashing/ -->
-        <!-- Can change categories depending on the messages I want to show -->
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <header>
-                        <div class="alert alert-success border text-center fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    </header>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <main class="container-p5">
-            {% block main %}{% endblock %}
-        </main>
-        
-        <footer class="small text-center text-muted">
-            Data provided for free by <a href="https://iextrading.com/developers">IEX</a>. View <a href="https://iexcloud.io/terms/">IEX’s Terms of Use</a>.
-        </footer>
+            <footer class="footer small text-center text-muted">
+                Data provided for free by <a href="https://iextrading.com/developers">IEX</a>. View <a href="https://iexcloud.io/terms/">IEX’s Terms of Use</a>.
+            </footer>
+        </div>
     </body>
 </html>

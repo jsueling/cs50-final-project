@@ -89,7 +89,7 @@ def index():
     params = config()
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
-    cur.execute("SELECT portfolio_name FROM shares where id = (%s) GROUP BY portfolio_name;", (id))
+    cur.execute("SELECT portfolio_name FROM shares where id = (%s) GROUP BY portfolio_name;", (id,))
     names = cur.fetchall()
     cur.close()
     conn.close()
@@ -131,7 +131,7 @@ def register():
         conn = psycopg2.connect(**params)
         cur =  conn.cursor()
 
-        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username))
+        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username,))
         rows = cur.fetchall()
 
         # Database check
@@ -145,12 +145,12 @@ def register():
         cur.execute("INSERT INTO users (username, password) VALUES (%s, %s);", (lower_username, hashed_password))
         
         # Instead of redirecting to login we can be efficient and redirect to the index
-        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username))
+        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username,))
         rows = cur.fetchall()
         
         # After first storing id in session
         # Which satisfies our login_required function
-        session["user_id"] = rows[0]["id"]
+        session["user_id"] = rows[0][0]
 
         conn.commit()
         cur.close()
@@ -208,8 +208,9 @@ def login():
             return error_page("Incorrect password", 403)
         
         # Passed Checks > Store current user ID
-        session["user_id"] = rows[0]["id"]
-
+        session["user_id"] = rows[0][0]
+        print(session["user_id"])
+        
         flash(f"Logged in as {username} successfully!")
         # Successful login
         return redirect("/")

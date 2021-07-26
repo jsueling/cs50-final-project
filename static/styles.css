@@ -3,7 +3,7 @@ nav .navbar-brand
     font-size: xx-large;
 }
 nav li > a {
-    font-size: x-large;
+    font-size: large;
 }
 
 main .form-control

@@ -105,7 +105,9 @@ def index():
 def register():
     """Register user"""
 
-    session.clear()
+    if session.get("user_id"):
+        flash("You are already logged in.", "primary")
+        return redirect("/")
 
     # User submitting register form
     if request.method == "POST":
@@ -168,8 +170,9 @@ def register():
 def login():
     """Log user in"""
 
-    # Clear user_id
-    session.clear()
+    if session.get("user_id"):
+        flash("You are already logged in.", "primary")
+        return redirect("/")
 
     # User is submitting the form on trying to login (POST)
     if request.method =="POST":
@@ -210,7 +213,8 @@ def login():
         
         # Passed Checks > Store current user ID
         session["user_id"] = rows[0][0]
-        
+        if "user_id" in session:
+            print("success")
         flash(f"Logged in as {username} successfully!", "success")
         # Successful login
         return redirect("/")
@@ -225,7 +229,7 @@ def login():
 def logout():
     session.clear()
     flash("Logged out successfully!", "success")
-    return redirect("/")
+    return redirect("/login")
 
 @app.route("/create")
 @login_required

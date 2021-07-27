@@ -30,7 +30,7 @@
         <div id="page-container">
             <div id="content-wrap">
                 <nav class="nav navbar-expand-md fixed-top navbar-dark bg-dark text-white">
-                    <a class="navbar-brand ml-3 mb-1"><strong>MyPortfolios</strong></a>
+                    <a class="navbar-brand ml-3 mb-1" href="/"><strong>MyPortfolios</strong></a>
                     <button class="navbar-toggler ml-auto" type="button" data-toggle="collapse" data-target="#target" aria-controls="target" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
@@ -40,7 +40,7 @@
                         {% if session.user_id %}
                             <ul class="navbar-nav mr-auto pl-5">
                                 <li class="navbar-item"><a class="nav-link" href="/create">Create</a></li>
-                                <li class="navbar-item active"><a class="nav-link" href="/edit">Edit</a></li>
+                                <li class="navbar-item active"><a class="nav-link" href="/add">Add</a></li>
                                 <li class="navbar-item"><a class="nav-link" href="/delete">Delete</a></li>
                             </ul>
                             <ul class="navbar-nav ml-auto pl-3">

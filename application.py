@@ -7,7 +7,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from functions import error_page, login_required, lookup, usd
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import time
+from datetime import time, date
 from dotenv import load_dotenv
 
 # Setup the flask app
@@ -72,9 +72,11 @@ app.jinja_env.filters["usd"] = usd
 
 # Something to look at maybe
 # https://stackoverflow.com/questions/28323666/setting-environment-variables-in-heroku-for-flask-app
-
+# https://stackoverflow.com/questions/41546883/what-is-the-use-of-python-dotenv
 # https://www.twilio.com/blog/environment-variables-python
+# .flaskenv needs to be added somewhere, add to functions to stop the program from not running
 load_dotenv("keys.env")
+
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
 
@@ -94,8 +96,9 @@ def index():
     cur.close()
     conn.close()
 
+    # I could create a portfolio table only listing the portfolio names but that seems inefficient
     if not names:
-        flash("We detected you have no portfolios so you have been redirected here", "primary")
+        flash("No portfolios detected - you have been redirected here automatically.", "primary")
         return redirect("/create")
 
     else:
@@ -230,11 +233,47 @@ def logout():
     flash("Logged out successfully!", "success")
     return redirect("/login")
 
-@app.route("/create")
+@app.route("/create", methods=["GET", "POST"])
 @login_required
 def create():
-    # TODO
-    return render_template("create.html")
+    if request.method =="POST":
+        
+        id = session["user_id"]
+        portfolio_name=request.form.get("portfolio_name")
+        if not portfolio_name:
+            return error_page('You must enter a portfolio name', 403)
+        lower_pfname=portfolio_name.lower()
+
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        # We don't want a user to have portfolios with the same name
+        cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY portfolio_name", (id, lower_pfname))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        if len(rows) == 1:
+            return error_page('You already have a portfolio with this name', 403)
+        
+        # passed tests
+        flash(f"Portfolio: {portfolio_name} has successfully created.", "success")
+
+        # User must add 1 share whilst creating
+        # Button to add more or show portfolio
+        # Likewise in add: add another or add and show
+
+        # TODO https://stackoverflow.com/questions/8552675/form-sending-error-flask
+        # We still want to check for valid inputs and once passed insert into SQL
+        # The buttons just handle where the user is redirected after
+        if request.form["submit"] == "create":
+            return redirect("/")
+        else:
+            return reditect("/add")
+
+    else:
+        x = date.today()
+        today = x.strftime("%Y-%m-%d")
+        return render_template("create.html", today=today)
 
 @app.route("/myportfolios/<portfolio_name>")
 @login_required

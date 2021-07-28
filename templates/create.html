@@ -19,7 +19,7 @@
     </div>
     <div class="form-group">
         <!-- https://www.techiedelight.com/restrict-html-input-text-box-to-allow-only-numeric-values/ -->
-        <label for="purchase_quantity">How many did you purchase?:</label><br><input autocomplete="off" class="form-control" name="purchase_quantity" placeholder="Quantity" type="number" pattern="[0-9]"+>
+        <label for="purchase_quantity">How many did you purchase?:</label><br><input autocomplete="off" class="form-control" name="purchase_quantity" placeholder="Quantity" type="number" min="1">
     </div>
     <div class="form-group">
         <label for="purchase_date">When did you purchase?:</label><br><input autocomplete="off" class="form-control" name="purchase_date" value={{ today }} max={{ today }} type="date">

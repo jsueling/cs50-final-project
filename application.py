@@ -241,10 +241,38 @@ def create():
     if request.method =="POST":
         
         id = session["user_id"]
-        portfolio_name=request.form.get("portfolio_name")
+        portfolio_name = request.form.get("portfolio_name")
+        lower_pfname = portfolio_name.lower()
+        symbol = request.form.get("symbol")
+        purchase_quantity = request.form.get("purchase_quantity")
+        purchase_date = request.form.get("purchase_date")
+        x = date.today()
+        today = x.strftime("%Y-%m-%d")
+
         if not portfolio_name:
-            return error_page('You must enter a portfolio name', 403)
-        lower_pfname=portfolio_name.lower()
+            return error_page('Enter a portfolio name', 403)
+        if not symbol:
+            return error_page("Enter a symbol", 403)
+        if not purchase_quantity:
+            return error_page("Enter a quantity", 403)
+
+        # https://pynative.com/python-check-user-input-is-number-or-string/
+        try:
+            # Cast as an int. If this fails we get a value error,
+            # so the input is not readable as an integer.
+            # Otherwise test passed the input was readable as an integer
+            val = int(purchase_quantity)
+        except ValueError:
+            try:
+                # cast as float
+                val=float(purchase_quantity)
+                # No error, the input was a float return this error message
+                return error_page("Input must be an integer", 403)
+            # The input is neither an int or a float so return this message
+            except ValueError:
+                return error_page("Input must be in decimal digits, 403")
+
+        # TODO Valid date checks
 
         params = config()
         conn = psycopg2.connect(**params)
@@ -252,26 +280,27 @@ def create():
         # We don't want a user to have portfolios with the same name
         cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY portfolio_name", (id, lower_pfname))
         rows = cur.fetchall()
-        cur.close()
-        conn.close()
         if len(rows) == 1:
             return error_page('You already have a portfolio with this name', 403)
         
-        symbol = request.form.get("symbol")
-        purchase_quantity = request.form.get("purchase_quantity")
-        purchase_date = request.form.get("purchase_date")
 
-        if not symbol:
-            return error_page("Enter a symbol", 403)
-        if not purchase_quantity:
-            return error_page("Enter a quantity", 403)
+        # The API call comes after all checks so we are efficient with our resources
+        # Prevents unused API calls
+        upper_symbol = symbol.upper()
+        # For this test/return message to make sense we must test the date input beforehand
+        data = lookup(upper_symbol, x)
+            if not data:
+                return error_page("The symbol was not recognised, refer to the link for supported symbols", 403)
 
-        # passed tests
+        # checked purchase date, quantity, portfolio name, symbol
+
+        # TODO check return values on dates, so far we are storing as date type not strftime YYYY-MM-DD
+        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s);", (upper_symbol, purchase_quantity, purchase_date, portfolio_name, id))
+        conn.commit()
+        cur.close()
+        conn.close()
+
         flash(f"Portfolio: {portfolio_name} has been successfully created.", "success")
-
-        # User must add 1 share whilst creating
-        # Button to add more or show portfolio
-        # Likewise in add: add another or add and show
 
         # TODO https://stackoverflow.com/questions/8552675/form-sending-error-flask
         # We still want to check for valid inputs and once passed insert into SQL
@@ -282,8 +311,6 @@ def create():
             return reditect("/add")
 
     else:
-        x = date.today()
-        today = x.strftime("%Y-%m-%d")
         return render_template("create.html", today=today)
 
 @app.route("/myportfolios/<portfolio_name>")

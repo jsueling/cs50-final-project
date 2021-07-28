@@ -39,17 +39,17 @@
                     <div class="collapse navbar-collapse" id="target">
                         {% if session.user_id %}
                             <ul class="navbar-nav mr-auto pl-5">
-                                <li class="navbar-item"><a class="nav-link" href="/create">Create</a></li>
-                                <li class="navbar-item active"><a class="nav-link" href="/add">Add</a></li>
-                                <li class="navbar-item"><a class="nav-link" href="/delete">Delete</a></li>
+                                <li class="navbar-item"><a class="nav-link {% block create %}{% endblock %}" href="/create">Create</a></li>
+                                <li class="navbar-item"><a class="nav-link {% block add %}{% endblock %}" href="/add">Add</a></li>
+                                <li class="navbar-item"><a class="nav-link {% block delete %}{% endblock %}" href="/delete">Delete</a></li>
                             </ul>
                             <ul class="navbar-nav ml-auto pl-3">
                                 <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
                             </ul>
                         {% else %}
                             <ul class="navbar-nav ml-auto pl-3">
-                                <li class="nav-item"><a class="nav-link" href="/login">Log in</a></li>
-                                <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
+                                <li class="nav-item"><a class="nav-link {% block login %}{% endblock %}" href="/login">Log in</a></li>
+                                <li class="nav-item"><a class="nav-link {% block register %}{% endblock %}" href="/register">Register</a></li>
                             </ul>
                         {% endif %}
                     </div>

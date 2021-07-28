@@ -1,8 +1,7 @@
 {% extends "layout.html" %}
 
-{% block title %}
-{{ portfolio_name }}
-{% endblock %}
+{% block title %}{{ portfolio_name }}{% endblock %}
+{% block main %}
 <h1>{{ portfolio_name }}</h1>
 <br>
 <div id="full_bar">
@@ -52,8 +51,4 @@
 
     {% endfor %}
 </div>
-
-
-{% block main %}
-
 {% endblock %}

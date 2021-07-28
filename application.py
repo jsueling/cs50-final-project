@@ -75,6 +75,8 @@ app.jinja_env.filters["usd"] = usd
 # https://stackoverflow.com/questions/41546883/what-is-the-use-of-python-dotenv
 # https://www.twilio.com/blog/environment-variables-python
 # .flaskenv needs to be added somewhere, add to functions to stop the program from not running
+
+# https://flask.palletsprojects.com/en/2.0.x/cli/
 load_dotenv("keys.env")
 
 if not os.environ.get("API_KEY"):
@@ -255,8 +257,17 @@ def create():
         if len(rows) == 1:
             return error_page('You already have a portfolio with this name', 403)
         
+        symbol = request.form.get("symbol")
+        purchase_quantity = request.form.get("purchase_quantity")
+        purchase_date = request.form.get("purchase_date")
+
+        if not symbol:
+            return error_page("Enter a symbol", 403)
+        if not purchase_quantity:
+            return error_page("Enter a quantity", 403)
+
         # passed tests
-        flash(f"Portfolio: {portfolio_name} has successfully created.", "success")
+        flash(f"Portfolio: {portfolio_name} has been successfully created.", "success")
 
         # User must add 1 share whilst creating
         # Button to add more or show portfolio

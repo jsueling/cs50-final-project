@@ -7,7 +7,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from functions import error_page, login_required, lookup, usd
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import time, date
+from datetime import time, date, timedelta
 from dotenv import load_dotenv
 
 # Setup the flask app
@@ -238,6 +238,23 @@ def logout():
 @app.route("/create", methods=["GET", "POST"])
 @login_required
 def create():
+    
+    # https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
+    # Important: Client-side form validation is no substitute for validating on the server.
+    # It's easy for someone to modify the HTML, or bypass your 
+    # HTML entirely and submit the data directly to your server.
+    # If your server fails to validate the received data, disaster could 
+    # strike with data that is badly-formatted, too large, of the wrong type, etc.
+
+    # Both methods need access to these variables
+    x = date.today()
+    today = x.strftime("%Y-%m-%d")
+    # https://stackoverflow.com/questions/441147/how-to-subtract-a-day-from-a-date
+    # Iexcloud API only offers historical data >5years on paid plans
+    # 365 * 5 = 1825
+    # After testing manually its a few days short sometimes so subtracted 5
+    mindate = x - timedelta(days=1820)
+
     if request.method =="POST":
         
         id = session["user_id"]
@@ -245,9 +262,15 @@ def create():
         lower_pfname = portfolio_name.lower()
         symbol = request.form.get("symbol")
         purchase_quantity = request.form.get("purchase_quantity")
-        purchase_date = request.form.get("purchase_date")
-        x = date.today()
-        today = x.strftime("%Y-%m-%d")
+
+        # https://stackoverflow.com/questions/10434599/get-the-data-received-in-a-flask-request
+        try:
+            purchase_date = request.form['purchase_date']
+        except requests.exceptions.RequestException:
+            try:
+                purchase_date = request.form['fallback_purchasedate']
+            except requests.exceptions.RequestException:
+                return error('Enter a Date', 403)
 
         if not portfolio_name:
             return error_page('Enter a portfolio name', 403)
@@ -265,14 +288,16 @@ def create():
         except ValueError:
             try:
                 # cast as float
-                val=float(purchase_quantity)
+                val = float(purchase_quantity)
                 # No error, the input was a float return this error message
                 return error_page("Input must be an integer", 403)
             # The input is neither an int or a float so return this message
             except ValueError:
                 return error_page("Input must be in decimal digits, 403")
 
-        # TODO Valid date checks
+        # Internet explorer doesn't support input="date"
+        # degrades to input="text"
+        # 
 
         params = config()
         conn = psycopg2.connect(**params)
@@ -289,8 +314,9 @@ def create():
         upper_symbol = symbol.upper()
         # For this test/return message to make sense we must test the date input beforehand
         data = lookup(upper_symbol, x)
-            if not data:
-                return error_page("The symbol was not recognised, refer to the link for supported symbols", 403)
+
+        if not data:
+            return error_page("The symbol was not recognised, refer to the link for supported symbols", 403)
 
         # checked purchase date, quantity, portfolio name, symbol
 
@@ -311,7 +337,7 @@ def create():
             return reditect("/add")
 
     else:
-        return render_template("create.html", today=today)
+        return render_template("create.html", today=today, mindate=mindate)
 
 @app.route("/myportfolios/<portfolio_name>")
 @login_required

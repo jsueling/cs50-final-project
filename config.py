@@ -1,6 +1,6 @@
-#!/usr/bin/python
-
 # https://www.postgresqltutorial.com/postgresql-python/connect/
+
+#!/usr/bin/python
 
 from configparser import ConfigParser
 

@@ -21,8 +21,12 @@
         <!-- https://www.techiedelight.com/restrict-html-input-text-box-to-allow-only-numeric-values/ -->
         <label for="purchase_quantity">How many did you purchase?:</label><br><input autocomplete="off" class="form-control" name="purchase_quantity" placeholder="Quantity" type="number" min="1">
     </div>
-    <div class="form-group">
-        <label for="purchase_date">When did you purchase?:</label><br><input autocomplete="off" class="form-control" name="purchase_date" value={{ today }} max={{ today }} type="date">
+    <div class="form-group nativeDatePicker">
+        <!-- https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date -->
+        <label for="purchase_date">When did you purchase?:</label><br><input autocomplete="off" class="form-control" name="purchase_date" value={{ today }} min={{ mindate }} max={{ today }} type="date">
+    </div>
+    <div class="form-group fallbackDatePicker">
+        <label for="fallback_purchasedate">When did you purchase?:</label><br><input autocomplete="off" class="form-control" name="fallback_purchasedate" placeholder="YYYY-MM-DD" type="text">
     </div>
     <br>
     <br>
@@ -31,4 +35,33 @@
     &nbsp&nbsp&nbsp
     <button class="btn btn-primary" type="submit" name="submit" value="add">Add more stocks</button>
 </form>
+
+<!-- https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date#javascript -->
+<!-- input="date" is not supported for IE11, falls back to "text"-->
+<script>
+    // define variables
+    var nativePicker = document.querySelector('.nativeDatePicker');
+    var fallbackPicker = document.querySelector('.fallbackDatePicker');
+
+    // hide fallback initially
+    fallbackPicker.style.display = 'none';
+
+    // test whether a new date input falls back to a text input or not
+    var test = document.createElement('input');
+
+    // Sends 'Invalid Input' to console if error
+    try {
+    test.type = 'date';
+    } catch (e) {
+    console.log(e.description);
+    }
+
+    // if the test falls back to text
+    if(test.type === 'text') {
+    // hide the native picker and show the fallback
+    // .style.display = 'inline'
+    nativePicker.style.display = 'none';
+    fallbackPicker.style.display = 'inline';
+    }
+</script>
 {% endblock %}

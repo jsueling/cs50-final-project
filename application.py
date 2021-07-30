@@ -7,7 +7,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from functions import error_page, login_required, lookup, usd
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import time, date, timedelta
+from datetime import datetime, time, date, timedelta
 from dotenv import load_dotenv
 
 # Setup the flask app
@@ -263,17 +263,30 @@ def create():
         symbol = request.form.get("symbol")
         purchase_quantity = request.form.get("purchase_quantity")
 
+        # Internet explorer doesn't support input="date", degrades to input="text"
+        
         # https://stackoverflow.com/questions/10434599/get-the-data-received-in-a-flask-request
         try:
-            purchase_date = request.form['purchase_date']
-        except requests.exceptions.RequestException:
-            try:
-                purchase_date = request.form['fallback_purchasedate']
-            except requests.exceptions.RequestException:
-                return error('Enter a Date', 403)
+            # Native case with input="date"
+            purchase_date = request.form["purchase_date"]
+        except KeyError:
+            # KeyError is triggered when an element with that name doesn't exist
+            # So by elimination fallback:
+            purchase_date = request.form["fallback_purchasedate"]
+        if not purchase_date:
+            return error_page("Enter a date", 403)
+        
+        # Convert to a datetime object so we can compare likes
+        parsed_purchasedate = datetime.strptime(purchase_date, "%Y-%m-%d")
+
+        # Prevent the user from entering, into either the native or fallback input, a date out of these bounds
+        if parsed_purchasedate < mindate:
+            return error_page("Sorry, This application is limited to only support historical price queries up to 5 years past", 403)
+        if parsed_purchasedate > x:
+            return error_page("You've entered a date in the future", 403)
 
         if not portfolio_name:
-            return error_page('Enter a portfolio name', 403)
+            return error_page("Enter a portfolio name", 403)
         if not symbol:
             return error_page("Enter a symbol", 403)
         if not purchase_quantity:
@@ -294,10 +307,6 @@ def create():
             # The input is neither an int or a float so return this message
             except ValueError:
                 return error_page("Input must be in decimal digits, 403")
-
-        # Internet explorer doesn't support input="date"
-        # degrades to input="text"
-        # 
 
         params = config()
         conn = psycopg2.connect(**params)

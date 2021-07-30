@@ -11,22 +11,21 @@
     </div>
     <br>
     <h4>Please add your first stock below before creating</h4>
-    <br>
-        <p>This application is limited to only support these symbols<br><a href="https://iextrading.com/trading/eligible-symbols/">https://iextrading.com/trading/eligible-symbols/</a></p>
+    <p>This application is limited to only support these symbols<br><a href="https://iextrading.com/trading/eligible-symbols/">https://iextrading.com/trading/eligible-symbols/</a></p>
     <br>
     <div class="form-group">
-        <label for="symbol">What is the symbol of the stock?:</label><br><input autocomplete="off" class="form-control" name="symbol" placeholder="Symbol" type="text">
+        <label for="symbol">What is the symbol of the stock?</label><br><input autocomplete="off" class="form-control" name="symbol" placeholder="Symbol" type="text">
     </div>
     <div class="form-group">
         <!-- https://www.techiedelight.com/restrict-html-input-text-box-to-allow-only-numeric-values/ -->
-        <label for="purchase_quantity">How many did you purchase?:</label><br><input autocomplete="off" class="form-control" name="purchase_quantity" placeholder="Quantity" type="number" min="1">
+        <label for="purchase_quantity">How many did you purchase?</label><br><input autocomplete="off" class="form-control" name="purchase_quantity" placeholder="Quantity" type="number" min="1">
     </div>
     <div class="form-group nativeDatePicker">
         <!-- https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date -->
-        <label for="purchase_date">When did you purchase?:</label><br><input autocomplete="off" class="form-control" name="purchase_date" value={{ today }} min={{ mindate }} max={{ today }} type="date">
+        <label for="purchase_date">When did you purchase?</label><br><input autocomplete="off" class="form-control" name="purchase_date" value={{ today }} min={{ mindate }} max={{ today }} type="date">
     </div>
     <div class="form-group fallbackDatePicker">
-        <label for="fallback_purchasedate">When did you purchase?:</label><br><input autocomplete="off" class="form-control" name="fallback_purchasedate" placeholder="YYYY-MM-DD" type="text">
+        <label for="fallback_purchasedate">When did you purchase?</label><br><input autocomplete="off" class="form-control" name="fallback_purchasedate" placeholder="YYYY-MM-DD" type="text">
     </div>
     <br>
     <br>

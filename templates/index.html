@@ -10,5 +10,10 @@
     <li href = "{{ url_for('myportfolios', portfolio_name=row[portfolio_name]) }}">{{ row[portfolio_name] }}</li>
     {% endfor %}
 </ul>
+<div>
+    <button class="btn btn-primary" href="/create">Create another portfolio</button>
+    &nbsp&nbsp&nbsp
+    <button class="btn btn-primary" href="/delete">Delete a portfolio</button>
+</div>
 
 {% endblock %}

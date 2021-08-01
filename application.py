@@ -7,7 +7,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from functions import error_page, login_required, lookup, usd
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import datetime, time, date, timedelta
+from datetime import datetime, time, timedelta
 from dotenv import load_dotenv
 
 # Setup the flask app
@@ -102,7 +102,7 @@ def index():
     if not names:
         flash("No portfolios detected - you have been redirected here automatically.", "primary")
         return redirect("/create")
-
+    
     else:
         return render_template("index.html", names=names)
 
@@ -247,12 +247,14 @@ def create():
     # strike with data that is badly-formatted, too large, of the wrong type, etc.
 
     # Both methods need access to these variables
-    x = date.today()
+    x = datetime.today()
     today = x.strftime("%Y-%m-%d")
     # https://stackoverflow.com/questions/441147/how-to-subtract-a-day-from-a-date
     # Iexcloud API only offers historical data >5years on paid plans
     # 365 * 5 = 1825
     # After testing manually its a few days short sometimes so subtracted 5
+    # TODO Weekends
+
     mindate = x - timedelta(days=1820)
 
     if request.method =="POST":
@@ -281,7 +283,21 @@ def create():
 
         # Prevent the user from entering, into either the native or fallback input, a date out of these bounds
         if parsed_purchasedate < mindate:
-            return error_page("Sorry, This application is limited to only support historical price queries up to 5 years past", 403)
+            # TODO
+            return error_page("Sorry, This application is limited to only support historical price queries up to ~5 years (1820 days) past", 403)
+        
+        # 00:00 2021/08/01 -> 23:59 2021/08/01 Need to error check this to not have
+        # Iexcloud doesnt store info using my API call for the current day (closing price is obvious)
+        # After testing it's at least 1 extra day from current day
+        # Weekend, need to write logic that searches for previous days if API call results in null
+        # Maximum 3 days in the case that the user has
+        # Account for stock exchange closures on Mondays
+        # Check 0 (Monday), Check -1 (Sunday), Check -2 (Saturday), Check -3 (Friday)
+        # Or just code to check if today is a weekend and return error message / restrict weekend inputs
+        # The user could have submitted a buy request on a weekend but it wouldnt be fulfilled until monday
+
+        #TODO if parsed_purchasedate == x:
+        #     return error_page("Cannot select today's date", 403)
         if parsed_purchasedate > x:
             return error_page("You've entered a date in the future", 403)
 
@@ -303,10 +319,16 @@ def create():
                 # cast as float
                 val = float(purchase_quantity)
                 # No error, the input was a float return this error message
-                return error_page("Input must be an integer", 403)
+                return error_page("Quantity must be an integer", 403)
             # The input is neither an int or a float so return this message
             except ValueError:
-                return error_page("Input must be in decimal digits, 403")
+                return error_page("Quantity must be in decimal digits, 403")
+        
+        # Convert to int after error checks with relevant messages
+        purchase_quantity = int(purchase_quantity)
+
+        if purchase_quantity < 1:
+            return error_page("Quantity must be a non-zero positive number", 403)
 
         params = config()
         conn = psycopg2.connect(**params)
@@ -317,33 +339,31 @@ def create():
         if len(rows) == 1:
             return error_page('You already have a portfolio with this name', 403)
         
-
+        # Check to see that the symbol exists in our API
         # The API call comes after all checks so we are efficient with our resources
         # Prevents unused API calls
         upper_symbol = symbol.upper()
-        # For this test/return message to make sense we must test the date input beforehand
-        data = lookup(upper_symbol, x)
+        data = lookup(upper_symbol, parsed_purchasedate)
 
+        # As we have validated the date already it can only be the symbol entered causing the API to return null
         if not data:
             return error_page("The symbol was not recognised, refer to the link for supported symbols", 403)
 
         # checked purchase date, quantity, portfolio name, symbol
 
-        # TODO check return values on dates, so far we are storing as date type not strftime YYYY-MM-DD
-        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s);", (upper_symbol, purchase_quantity, purchase_date, portfolio_name, id))
+        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s);", (upper_symbol, purchase_quantity, parsed_purchasedate, portfolio_name, id))
         conn.commit()
         cur.close()
         conn.close()
 
-        flash(f"Portfolio: {portfolio_name} has been successfully created.", "success")
+        flash(f"{portfolio_name} has been successfully created.", "success")
 
-        # TODO https://stackoverflow.com/questions/8552675/form-sending-error-flask
-        # We still want to check for valid inputs and once passed insert into SQL
-        # The buttons just handle where the user is redirected after
+        # https://stackoverflow.com/questions/8552675/form-sending-error-flask
+        # The buttons are identical but redirect to different pages
         if request.form["submit"] == "create":
             return redirect("/")
         else:
-            return reditect("/add")
+            return redirect("/add")
 
     else:
         return render_template("create.html", today=today, mindate=mindate)
@@ -368,7 +388,7 @@ def myportfolios(portfolio_name):
         # Revisit to look for correct types here for dates
         # Functions.py takes date inputs and formats it as string YYYYMMDD for the URL
         purchase_price = lookup(row["symbol"], row["purchase_date"])["price"]
-        current_price = loookup(row["symbol"], date.today())["price"]
+        current_price = lookup(row["symbol"], datetime.today())["price"]
         gain_loss = (purchase_price - current_price)*row["sum_shares"]
 
         date_nospace = row["purchase_date"].strftime("%Y%m%d")

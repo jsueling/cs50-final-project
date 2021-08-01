@@ -27,12 +27,13 @@ def lookup(symbol, date_input):
         return None
 
     # Parse response into a json object only extracting the information we need
+    # Response is returning [{ , , , }] instead of { , , , }
     try:
         quote = response.json()
         return {
-            "price": float(quote["close"]),
-            "symbol": quote["symbol"],
-            "label": quote["label"]
+            "price": float(quote[0]["close"]),
+            "symbol": quote[0]["symbol"],
+            "label": quote[0]["label"]
         }
     except (KeyError, TypeError, ValueError):
         return None

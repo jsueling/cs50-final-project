@@ -35,7 +35,7 @@ def lookup(symbol, date_input):
             "symbol": quote[0]["symbol"],
             "label": quote[0]["label"]
         }
-    except (KeyError, TypeError, ValueError):
+    except (KeyError, TypeError, ValueError, IndexError):
         return None
 
 

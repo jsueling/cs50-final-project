@@ -102,7 +102,6 @@ def index():
     if not names:
         flash("No portfolios detected - you have been redirected here automatically.", "primary")
         return redirect("/create")
-    
     else:
         return render_template("index.html", names=names)
 
@@ -116,7 +115,6 @@ def register():
 
     # User submitting register form
     if request.method == "POST":
-
         # User inputs
         username = request.form.get("username")
         # Case insensitive username for a smoother user experience
@@ -127,10 +125,8 @@ def register():
         # Form checks
         if not username:
             return error_page("Please enter a username")
-        
         if not password:
             return error_page("Please enter a password")
-
         if password != confirmation:
             return error_page("Passwords do not match")
 
@@ -190,7 +186,6 @@ def login():
         # Form checks
         if not username:
             return error_page("You must enter a username", 403)
-
         if not password:
             return error_page("You must enter a password", 403)
 
@@ -255,7 +250,7 @@ def create():
     # After testing manually its a few days short sometimes so subtracted 5
     # TODO Weekends
 
-    mindate = x - timedelta(days=1820)
+    mindate = x - timedelta(days=1825)
 
     if request.method =="POST":
         

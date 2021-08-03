@@ -4,8 +4,11 @@
 {% block main %}
 <h1>Whoops! You've encountered an error.</h1>
 <br>
-<h2>{{ message }}.</h2>
-<h3>Error code: {{ code }}</h3>
+<div id="errordiv">
+  <h5>{{ message }}.</h5>
+</div>
+<br>
+<h5>Error code: {{ code }}</h5>
 <br>
 <!-- https://www.w3schools.com/jsref/met_his_back.asp -->
 <button class="btn btn-primary"onclick="goBack()">Previous page</button>

@@ -10,8 +10,8 @@
         <label for="portfolio_name">Choose a name for your portfolio:</label><br><input autocomplete="off" autofocus class="form-control" name="portfolio_name" placeholder="MyPortfolio" type="text">
     </div>
     <br>
-    <h4>Please add your first stock below before creating</h4>
-    <p>This application is limited to only support these symbols<br><a href="https://iextrading.com/trading/eligible-symbols/">https://iextrading.com/trading/eligible-symbols/</a></p>
+    <h4>Please add your first stock below before creating:</h4>
+    <p>This application is limited to only support these symbols.<br><a href="https://iextrading.com/trading/eligible-symbols/">https://iextrading.com/trading/eligible-symbols/</a></p>
     <br>
     <div class="form-group">
         <label for="symbol">What is the symbol of the stock?</label><br><input autocomplete="off" class="form-control" name="symbol" placeholder="Symbol" type="text">
@@ -24,9 +24,11 @@
         <!-- https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date -->
         <!-- Change min and max to reflect changes in /create -->
         <label for="purchase_date">When did you purchase?</label><br><input autocomplete="off" class="form-control" name="purchase_date" value={{ today }} min={{ mindate }} max={{ today }} type="date">
+        <br><br><h6>For weekends or holidays where the exchange is closed,<br> we will try to find price from the nearest trading day.</h6>
     </div>
     <div class="form-group fallbackDatePicker">
         <label for="fallback_purchasedate">When did you purchase?</label><br><input autocomplete="off" class="form-control" name="fallback_purchasedate" placeholder="YYYY-MM-DD" type="text">
+        <br><br><h6>For weekends or holidays where the exchange is closed,<br> we will try to find price from the nearest trading day.</h6>
     </div>
     <br>
     <br>
@@ -63,5 +65,9 @@
     nativePicker.style.display = 'none';
     fallbackPicker.style.display = 'inline';
     }
+
+// TODO
+// We can save alot of API requests by restricting the user input with JS
+// To not 
 </script>
 {% endblock %}

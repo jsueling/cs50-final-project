@@ -43,3 +43,8 @@ main
 input:invalid {
     border: 3px solid red;
 }
+
+#errordiv {
+    width: 80%;
+    margin: auto;
+}

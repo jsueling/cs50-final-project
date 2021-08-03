@@ -128,7 +128,7 @@ def register():
         if not password:
             return error_page("Please enter a password")
         if password != confirmation:
-            return error_page("Passwords do not match")
+            return error_page("Passwords do not match (Case sensitive)")
 
         # Connected
         params = config()
@@ -209,7 +209,7 @@ def login():
             return error_page("An account with this username does not exist", 403)
 
         if not check_password_hash(rows[0][2], password):
-            return error_page("Incorrect password", 403)
+            return error_page("Incorrect password (Case sensitive)", 403)
         
         # Passed Checks > Store current user ID
         session["user_id"] = rows[0][0]
@@ -244,12 +244,10 @@ def create():
     # Both methods need access to these variables
     x = datetime.today()
     today = x.strftime("%Y-%m-%d")
-    # https://stackoverflow.com/questions/441147/how-to-subtract-a-day-from-a-date
+    # https://iexcloud.io/docs/api/#historical-prices
     # Iexcloud API only offers historical data >5years on paid plans
     # 365 * 5 = 1825
-    # After testing manually its a few days short sometimes so subtracted 5
-    # TODO Weekends
-
+    # https://docs.python.org/3/library/datetime.html#timedelta-objects
     mindate = x - timedelta(days=1825)
 
     if request.method =="POST":
@@ -261,38 +259,26 @@ def create():
         purchase_quantity = request.form.get("purchase_quantity")
 
         # Internet explorer doesn't support input="date", degrades to input="text"
-        
-        # https://stackoverflow.com/questions/10434599/get-the-data-received-in-a-flask-request
         try:
             # Native case with input="date"
+            # https://stackoverflow.com/questions/10434599/get-the-data-received-in-a-flask-request
             purchase_date = request.form["purchase_date"]
         except KeyError:
-            # KeyError is triggered when an element with that name doesn't exist
+            # KeyError when an element with that name doesn't exist
             # So by elimination fallback:
             purchase_date = request.form["fallback_purchasedate"]
+
         if not purchase_date:
             return error_page("Enter a date", 403)
         
-        # Convert to a datetime object so we can compare likes
+        # Convert to a datetime object so we can compare
         parsed_purchasedate = datetime.strptime(purchase_date, "%Y-%m-%d")
 
-        # Prevent the user from entering, into either the native or fallback input, a date out of these bounds
+        # Prevent the user from entering a date out of these bounds, today and 5 years ago
         if parsed_purchasedate < mindate:
-            # TODO
-            return error_page("Sorry, This application is limited to only support historical price queries up to ~5 years (1820 days) past", 403)
+            # TODO Test lower bound Live
+            return error_page("This application is limited to only support historical price queries up to 5 years (1825 days) past", 403)
         
-        # 00:00 2021/08/01 -> 23:59 2021/08/01 Need to error check this to not have
-        # Iexcloud doesnt store info using my API call for the current day (closing price is obvious)
-        # After testing it's at least 1 extra day from current day
-        # Weekend, need to write logic that searches for previous days if API call results in null
-        # Maximum 3 days in the case that the user has
-        # Account for stock exchange closures on Mondays
-        # Check 0 (Monday), Check -1 (Sunday), Check -2 (Saturday), Check -3 (Friday)
-        # Or just code to check if today is a weekend and return error message / restrict weekend inputs
-        # The user could have submitted a buy request on a weekend but it wouldnt be fulfilled until monday
-
-        #TODO if parsed_purchasedate == x:
-        #     return error_page("Cannot select today's date", 403)
         if parsed_purchasedate > x:
             return error_page("You've entered a date in the future", 403)
 
@@ -305,21 +291,20 @@ def create():
 
         # https://pynative.com/python-check-user-input-is-number-or-string/
         try:
-            # Cast as an int. If this fails we get a value error,
-            # so the input is not readable as an integer.
-            # Otherwise test passed the input was readable as an integer
+            # If casting as int fails we get a value error which means the input must be a float or a string
+            # No error means the input was an integer or string of an integer
             val = int(purchase_quantity)
         except ValueError:
             try:
                 # cast as float
                 val = float(purchase_quantity)
-                # No error, the input was a float return this error message
+                # No error means the input was a float
                 return error_page("Quantity must be an integer", 403)
-            # The input is neither an int or a float so return this message
+            # By elimination the input is a string
             except ValueError:
                 return error_page("Quantity must be in decimal digits, 403")
         
-        # Convert to int after error checks with relevant messages
+        # convert to int after error checks
         purchase_quantity = int(purchase_quantity)
 
         if purchase_quantity < 1:
@@ -334,19 +319,66 @@ def create():
         if len(rows) == 1:
             return error_page('You already have a portfolio with this name', 403)
         
-        # Check to see that the symbol exists in our API
-        # The API call comes after all checks so we are efficient with our resources
-        # Prevents unused API calls
-        upper_symbol = symbol.upper()
-        data = lookup(upper_symbol, parsed_purchasedate)
+        # Check the symbol exists at IEX, whilst checking there is a price for the given date which is then stored in the database.
+        # This comes after most other checks so we are more efficient with our API calls
 
-        # As we have validated the date already it can only be the symbol entered causing the API to return null
+        y = symbol.upper()
+        z = parsed_purchasedate
+        j = z.date()
+        k = date.today()
+
+        # TODO Move to functions.py? depending on whether it needs to be repeated
+        
+        # IEX doesn't store historical price info of the current day or weekends/holidays when exchanges are closed
+        
+        # request for today which is Monday
+        if j == k and y.isoweekday() == 1:
+            z = z - timedelta(days=3)
+            data = lookup(y, z)
+        
+        # Weekends, lookup the nearest weekday
+
+        # Saturday
+        elif y.isoweekday() == 6:
+            z = z - timedelta(days=1)
+            data = lookup(y, z)
+            # Friday has no data
+            if not data:
+                # Check Monday
+                z = z + timedelta(days=3)
+                data = lookup(y, z)
+        
+        # Sunday
+        elif y.isoweekday() == 7:
+            z = z + timedelta(days=1)
+            data = lookup(y, z)
+            # Monday has no data
+            if not data:
+                # Check Friday
+                z = z - timedelta(days=3)
+                data = lookup(y, z)
+            
+        # Monday to Friday
+        # Check 1 day either side to account for holidays/closures
+        else:
+            data = lookup(y, z)
+            if not data:
+                z = z + timedelta(days=1)
+                data = lookup(y, z)
+                if not data:
+                    z = z - timedelta(days=2)
+                    data = lookup(y, z)        
+        
         if not data:
-            return error_page("The symbol was not recognised, refer to the link for supported symbols", 403)
+            return error_page("No data found on the date entered for this symbol. Please refer to the link for supported symbols and check the date.", 403)
 
-        # checked purchase date, quantity, portfolio name, symbol
+        # The new date used in lookup
+        parsed_purchasedate = z
 
-        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s);", (upper_symbol, purchase_quantity, parsed_purchasedate, portfolio_name, id))
+        # All validity checks passed
+
+        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s);",
+                    (upper_symbol, purchase_quantity, parsed_purchasedate, portfolio_name, id))
         conn.commit()
         cur.close()
         conn.close()
@@ -354,7 +386,7 @@ def create():
         flash(f"{portfolio_name} has been successfully created.", "success")
 
         # https://stackoverflow.com/questions/8552675/form-sending-error-flask
-        # The buttons are identical but redirect to different pages
+        # The buttons do the same thing except redirect to different pages
         if request.form["submit"] == "create":
             return redirect("/")
         else:
@@ -372,7 +404,8 @@ def myportfolios(portfolio_name):
     params = config()
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
-    cur.execute("SELECT symbol, SUM(purchase_quantity) AS sum_shares, purchase_date FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY symbol, purchase_date;", (id, portfolio_name))
+    cur.execute("SELECT symbol, SUM(purchase_quantity) AS sum_shares, purchase_date FROM shares WHERE id=(%s) AND 
+                portfolio_name=(%s) GROUP BY symbol, purchase_date;", (id, portfolio_name))
     portfolio = cur.fetchall()
     cur.close()
     conn.close()

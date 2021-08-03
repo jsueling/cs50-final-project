@@ -45,6 +45,21 @@ input:invalid {
 }
 
 #errordiv {
-    width: 80%;
+    width: 90%;
+    margin: auto;
+}
+
+p {
+    max-width: 90%;
+    margin: auto;
+}
+
+h4 {
+    max-width: 90%;
+    margin: auto;
+}
+
+h1 {
+    max-width: 90%;
     margin: auto;
 }

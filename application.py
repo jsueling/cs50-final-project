@@ -7,7 +7,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from functions import error_page, login_required, lookup, usd
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import datetime, time, timedelta
+from datetime import datetime, date, time, timedelta
 from dotenv import load_dotenv
 
 # Setup the flask app
@@ -45,19 +45,6 @@ Session(app)
 # This filter is now registered for use in templates
 app.jinja_env.filters["usd"] = usd
 
-# TODO setup a postgres db file to be referred to
-# db = #https://devcenter.heroku.com/articles/getting-started-with-python#provision-a-database
-# https://data.heroku.com/datastores/c27215db-81e8-4cd9-a1bb-f5d89a6b7949#administration
-# Access the database using these keys
-# Setup tables I need
-# Find a way to reference back to the db i.e. db = SQL("sqlite:///finance.db")
-# Tables: users: user_id
-# CREATE UNIQUE INDEX 'username' ON "users" ("username");
-# We must have unique usernames or there is potential to hack other accounts
-# when user logs in the program will either retrieve the first row which has the username or there will be an error
-# both are bad outcomes for the user
-# Best practice: for unique username, check against the hash else reject
-
 # https://www.postgresqltutorial.com/postgresql-python/connect/
 # https://www.psycopg.org/docs/usage.html
 
@@ -71,6 +58,10 @@ app.jinja_env.filters["usd"] = usd
 # conn.close()
 
 # Something to look at maybe
+# Heroku is storing an environment variable of API_KEY=...
+# Because the .env is not git committed and heroku is running the git committed vers
+# Running locally keys.env is read with flask run
+# Added a remote pointing to heroku to deploy to heroku with 'git push heroku master'
 # https://stackoverflow.com/questions/28323666/setting-environment-variables-in-heroku-for-flask-app
 # https://stackoverflow.com/questions/41546883/what-is-the-use-of-python-dotenv
 # https://www.twilio.com/blog/environment-variables-python
@@ -332,14 +323,14 @@ def create():
         # IEX doesn't store historical price info of the current day or weekends/holidays when exchanges are closed
         
         # request for today which is Monday
-        if j == k and y.isoweekday() == 1:
+        if j == k and z.isoweekday() == 1:
             z = z - timedelta(days=3)
             data = lookup(y, z)
         
         # Weekends, lookup the nearest weekday
 
         # Saturday
-        elif y.isoweekday() == 6:
+        elif z.isoweekday() == 6:
             z = z - timedelta(days=1)
             data = lookup(y, z)
             # Friday has no data
@@ -349,7 +340,7 @@ def create():
                 data = lookup(y, z)
         
         # Sunday
-        elif y.isoweekday() == 7:
+        elif z.isoweekday() == 7:
             z = z + timedelta(days=1)
             data = lookup(y, z)
             # Monday has no data
@@ -370,10 +361,11 @@ def create():
                     data = lookup(y, z)        
         
         if not data:
-            return error_page("No data found on the date entered for this symbol. Please refer to the link for supported symbols and check the date.", 403)
+            return error_page("No data found on the date entered for this symbol. Please refer to the link for supported symbols and check the date", 403)
 
         # The new date used in lookup
         parsed_purchasedate = z
+        upper_symbol = y
 
         # All validity checks passed
 
@@ -404,8 +396,7 @@ def myportfolios(portfolio_name):
     params = config()
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
-    cur.execute("SELECT symbol, SUM(purchase_quantity) AS sum_shares, purchase_date FROM shares WHERE id=(%s) AND 
-                portfolio_name=(%s) GROUP BY symbol, purchase_date;", (id, portfolio_name))
+    cur.execute("SELECT symbol, SUM(purchase_quantity) AS sum_shares, purchase_date FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY symbol, purchase_date;", (id, portfolio_name))
     portfolio = cur.fetchall()
     cur.close()
     conn.close()

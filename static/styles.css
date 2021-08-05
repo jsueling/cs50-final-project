@@ -63,3 +63,14 @@ h1 {
     max-width: 90%;
     margin: auto;
 }
+
+#outer
+{
+    width: 100%;
+    text-align: center;
+}
+
+.inner
+{
+    display: inline-block;
+}

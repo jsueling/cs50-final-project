@@ -89,12 +89,16 @@ def index():
     cur.close()
     conn.close()
 
-    # I could create a portfolio table only listing the portfolio names but that seems inefficient
+    no_portfolios = False
+
     if not names:
-        flash("No portfolios detected - you have been redirected here automatically.", "primary")
-        return redirect("/create")
+        no_portfolios = True
+
+    # The user has 1 porfolio, automatic redirect to that portfolio
+    if len(names) == 1:
+        return redirect(f"/myportfolios/{names[0][0]}")
     else:
-        return render_template("index.html", names=names)
+        return render_template("index.html", names=names, no_portfolios=no_portfolios)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -354,10 +358,10 @@ def create():
         else:
             data = lookup(y, z)
             if not data:
-                z = z + timedelta(days=1)
+                z = z - 1 timedelta(days=1)
                 data = lookup(y, z)
                 if not data:
-                    z = z - timedelta(days=2)
+                    z = z + timedelta(days=2)
                     data = lookup(y, z)        
         
         if not data:
@@ -392,7 +396,8 @@ def create():
 def myportfolios(portfolio_name):
 
     id = session["user_id"]
-
+    now = datetime.now()
+    
     params = config()
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
@@ -406,12 +411,12 @@ def myportfolios(portfolio_name):
     for row in portfolio:
         # Revisit to look for correct types here for dates
         # Functions.py takes date inputs and formats it as string YYYYMMDD for the URL
-        purchase_price = lookup(row["symbol"], row["purchase_date"])["price"]
-        current_price = lookup(row["symbol"], datetime.today())["price"]
-        gain_loss = (purchase_price - current_price)*row["sum_shares"]
+        purchase_price = lookup(row[0], row[2])["price"]
+        current_price = lookup(row[0], now)["price"]
+        gain_loss = (purchase_price - current_price)*row[1]
 
-        date_nospace = row["purchase_date"].strftime("%Y%m%d")
-        unique_id = row["symbol"] + date_nospace
+        date_nospace = row[2].strftime("%Y%m%d")
+        unique_id = row[0] + date_nospace
 
         z = [{'unique_id': unique_id, 'gain_loss': gain_loss}]
 
@@ -435,3 +440,46 @@ def myportfolios(portfolio_name):
     # I pass the largest element of both arrays
 
     return render_template("portfolio.html", x=x, y=y, portfolio_name=portfolio_name)
+
+@app.route("/delete", methods=["GET", "POST"])
+@login_required
+def delete():
+
+    id = session["user_id"]
+
+    params = config()
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+    cur.execute("SELECT portfolio_name FROM shares where id = (%s) GROUP BY portfolio_name;", (id,))
+    names = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    if not names:
+        flash("No portfolios detected - you have been redirected here automatically.", "primary")
+        return redirect("/create")
+
+    if request.method =="POST":
+
+        # Gets a list of the values of the checked inputs from the form with name="portfolio"
+        portfolios = request.form.getlist("portfolio")
+
+        if not portfolios:
+            return error_page("Select portfolios you want to delete", 403)
+
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+
+        # For each selected portfolio, delete the corresponding rows in shares
+        for portfolio in portfolios:
+            cur.execute("DELETE FROM shares where id = (%s) AND portfolio_name = (%s)", (id, portfolio))
+            flash(f"{portfolio} was successfully deleted.", success)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return redirect("/")
+    else:
+        return render_template("delete.html", names=names)

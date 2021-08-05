@@ -10,6 +10,11 @@ def error_page(message, code=400):
     """Returns a message on the error and what the user should do"""
     return render_template("error_page.html", code=code, message=message), code
 
+# My current application.py relies on calling lookup twice, my tables only store the date bought at
+# Could store purchase price in table to save 1 API call per visit
+# Same problem in /create, no data on days where exchanges are closed or current day
+# Need to rewrite lookup to accomodate lack of data on some days
+# e.g. lookup(today) > lookup(nearest weekday)
 def lookup(symbol, date_input):
     """Look up quote for symbol."""
 

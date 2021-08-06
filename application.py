@@ -5,7 +5,7 @@ from config import config
 from flask import Flask, flash, render_template, redirect, request, session
 from flask_session import Session
 from tempfile import mkdtemp
-from functions import error_page, login_required, lookup, usd
+from functions import error_page, login_required, lookup, usd, scan
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, date, time, timedelta
 from dotenv import load_dotenv
@@ -237,19 +237,17 @@ def create():
     # strike with data that is badly-formatted, too large, of the wrong type, etc.
 
     # Both methods need access to these variables
-    x = datetime.today()
-    today = x.strftime("%Y-%m-%d")
+    today = date.today()
     # https://iexcloud.io/docs/api/#historical-prices
     # Iexcloud API only offers historical data >5years on paid plans
     # 365 * 5 = 1825
     # https://docs.python.org/3/library/datetime.html#timedelta-objects
-    mindate = x - timedelta(days=1825)
+    min_date = today - timedelta(days=1825)
 
     if request.method =="POST":
         
         id = session["user_id"]
         portfolio_name = request.form.get("portfolio_name")
-        lower_pfname = portfolio_name.lower()
         symbol = request.form.get("symbol")
         purchase_quantity = request.form.get("purchase_quantity")
 
@@ -266,15 +264,15 @@ def create():
         if not purchase_date:
             return error_page("Enter a date", 403)
         
-        # Convert to a datetime object so we can compare
-        parsed_purchasedate = datetime.strptime(purchase_date, "%Y-%m-%d")
+        # Convert input a datetime object so we can compare
+        parsed_datetime = datetime.strptime(purchase_date, "%Y-%m-%d")
+        parsed_date = parsed_datetime.date()
 
         # Prevent the user from entering a date out of these bounds, today and 5 years ago
-        if parsed_purchasedate < mindate:
+        if parsed_date < min_date:
             # TODO Test lower bound Live
             return error_page("This application is limited to only support historical price queries up to 5 years (1825 days) past", 403)
-        
-        if parsed_purchasedate > x:
+        if parsed_date > today:
             return error_page("You've entered a date in the future", 403)
 
         if not portfolio_name:
@@ -309,76 +307,36 @@ def create():
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         # We don't want a user to have portfolios with the same name
-        cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY portfolio_name", (id, lower_pfname))
+        cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY portfolio_name", (id, portfolio_name))
         rows = cur.fetchall()
         if len(rows) == 1:
             return error_page('You already have a portfolio with this name', 403)
         
-        # Check the symbol exists at IEX, whilst checking there is a price for the given date which is then stored in the database.
-        # This comes after most other checks so we are more efficient with our API calls
+        # Check the symbol exists at IEX, whilst checking there is a price for the 
+        # given date which are both stored in the database.
 
-        y = symbol.upper()
-        z = parsed_purchasedate
-        j = z.date()
-        k = date.today()
+        # scan and lookup used after all other checks so we are more efficient with our API calls
 
-        # TODO Move to functions.py? depending on whether it needs to be repeated
+        upper_symbol = symbol.upper()
         
-        # IEX doesn't store historical price info of the current day or weekends/holidays when exchanges are closed
-        
-        # request for today which is Monday
-        if j == k and z.isoweekday() == 1:
-            z = z - timedelta(days=3)
-            data = lookup(y, z)
-        
-        # Weekends, lookup the nearest weekday
+        data = scan(upper_symbol, parsed_date)
 
-        # Saturday
-        elif z.isoweekday() == 6:
-            z = z - timedelta(days=1)
-            data = lookup(y, z)
-            # Friday has no data
-            if not data:
-                # Check Monday
-                z = z + timedelta(days=3)
-                data = lookup(y, z)
-        
-        # Sunday
-        elif z.isoweekday() == 7:
-            z = z + timedelta(days=1)
-            data = lookup(y, z)
-            # Monday has no data
-            if not data:
-                # Check Friday
-                z = z - timedelta(days=3)
-                data = lookup(y, z)
-            
-        # Monday to Friday
-        # Check 1 day either side to account for holidays/closures
-        else:
-            data = lookup(y, z)
-            if not data:
-                z = z - 1 timedelta(days=1)
-                data = lookup(y, z)
-                if not data:
-                    z = z + timedelta(days=2)
-                    data = lookup(y, z)        
-        
         if not data:
             return error_page("No data found on the date entered for this symbol. Please refer to the link for supported symbols and check the date", 403)
 
-        # The new date used in lookup
-        parsed_purchasedate = z
-        upper_symbol = y
+        # data not empty
+        scan_date = data["date"]
+        purchase_price = data["price"]
 
         # All validity checks passed
 
-        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s);",
-                    (upper_symbol, purchase_quantity, parsed_purchasedate, portfolio_name, id))
+        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_price, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s, %s);",
+                    (upper_symbol, purchase_quantity, purchase_price, scan_date, portfolio_name, id))
         conn.commit()
         cur.close()
         conn.close()
 
+        flash(f"{purchase_quantity} shares of {upper_symbol} bought on \U0001F4C5 {scan_date} - saved to {portfolio_name}", "success")
         flash(f"{portfolio_name} has been successfully created.", "success")
 
         # https://stackoverflow.com/questions/8552675/form-sending-error-flask
@@ -389,7 +347,7 @@ def create():
             return redirect("/add")
 
     else:
-        return render_template("create.html", today=today, mindate=mindate)
+        return render_template("create.html", today=today, min_date=min_date)
 
 @app.route("/myportfolios/<portfolio_name>")
 @login_required

@@ -4,7 +4,7 @@ import urllib.parse
 
 from flask import redirect, session, render_template 
 from functools import wraps
-from datetime import time
+from datetime import time, timedelta, datetime, date
 
 def error_page(message, code=400):
     """Returns a message on the error and what the user should do"""
@@ -38,11 +38,62 @@ def lookup(symbol, date_input):
         return {
             "price": float(quote[0]["close"]),
             "symbol": quote[0]["symbol"],
-            "label": quote[0]["label"]
         }
     except (KeyError, TypeError, ValueError, IndexError):
         return None
 
+def scan(symbol, date_input):
+    """Scan nearest days for data"""
+
+    # IEX doesn't store historical price info of the current day 
+    # or weekends/holidays when exchanges are closed
+
+    todays_date = date.today()
+    purchase_date = date_input
+
+    # request for today which is Monday
+    if todays_date == purchase_date and purchase_date.weekday() == 0:
+        # call lookup using the previous Friday
+        scan_date = purchase_date - timedelta(days=3)
+        data = lookup(symbol, scan_date)
+    
+    # Weekends, lookup the nearest weekday
+
+    # Saturday
+    elif purchase_date.weekday() == 5:
+        scan_date = purchase_date - timedelta(days=1)
+        data = lookup(symbol, scan_date)
+        if not data:
+            scan_date = purchase_date + timedelta(days=3)
+            data = lookup(symbol, scan_date)
+    
+    # Sunday
+    elif purchase_date.weekday() == 6:
+        scan_date = purchase_date + timedelta(days=1)
+        data = lookup(symbol, scan_date)
+        if not data:
+            scan_date = purchase_date - timedelta(days=3)
+            data = lookup(symbol, scan_date)
+    
+    # Monday to Friday
+    # There's a tradeoff between accomodating the user and number of API calls
+    # It's not efficient to have 3 API calls per failed lookup with alot of users
+    else:
+        data = lookup(symbol, purchase_date)
+        scan_date = purchase_date
+        if not data:
+            scan_date = purchase_date - timedelta(days=1)
+            data = lookup(symbol, scan_date)
+            if not data:
+                scan_date = purchase_date + timedelta(days=2)
+                data = lookup(symbol, scan_date)
+    
+    # Return a json object with the new date used
+    return {
+        "price": data["price"],
+        "symbol": data["symbol"],
+        "date": scan_date
+    }
 
 def login_required(f):
     """

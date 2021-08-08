@@ -358,6 +358,8 @@ def create():
 @login_required
 def myportfolios(portfolio_name):
 
+    # OVERALL % CHANGE AND $ VALUE, LARGE
+
     id = session["user_id"]
     today = date.today()
     
@@ -375,19 +377,49 @@ def myportfolios(portfolio_name):
 
     x = []
 
-    for row in portfolio:
-        # Revisit to look for correct types here for dates
-        # Functions.py takes date inputs and formats it as string YYYYMMDD for the URL
-        purchase_price = float(row[2])
-        current_price = float(scan(row[0], today)["price"])
-        gain_loss = round((purchase_price - current_price)*row[1], 2)
-        date_nospace = row[3].strftime("%Y%m%d")
-        unique_id = row[0] + date_nospace
+    # We want percentage and $ value
+    purchase_overall = 0
+    current_overall = 0
 
-        z = [{'unique_id': unique_id, 'gain_loss': gain_loss}]
+    for row in portfolio:
+
+        date_nospace = row[3].strftime("%Y%m%d")
+        # E.g. AAPL20210808
+        unique_id = row[0] + date_nospace
+        # Unique ID used:
+        # 1. as a href to a shares route for a more explicit breakdown
+        # and also the ability to delete this single purchase from there portfolio
+        # 2. as a variable name for session to store current_price rather than calling API again
+        
+        # https://stackoverflow.com/a/27611281
+
+        # If we already have this variable in session use that
+        if session[unique_id + '_current']:
+            # The data we are using only updates once per day (current price) which is slow enough
+            # to not affect the user when storing and reusing it in session
+            current_price = session[unique_id + '_current']
+
+        else:
+            current_price = float(scan(row[0], today)["price"])
+            # Store current price
+            session[unique_id + '_current'] = current_price
+
+        purchase_price = float(row[2])
+        # Difference in price * Quantity
+        # to get $ change in value
+        net_change = (purchase_price - current_price)*row[1]
+
+        # TODO
+        # z = ...
 
         x += z
     
+        purchase_overall += purchase_price
+        current_overall += current_price
+    
+    net_overall = current_overall - purchase_overall
+    net_percentage = round((net_overall/purchase_overall)*100, 2)
+
     # https://stackoverflow.com/a/73050
     # https://stackoverflow.com/a/46013151
 

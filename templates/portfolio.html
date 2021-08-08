@@ -28,27 +28,17 @@
         all div elements are uniquely identified and still retain their $ gain/loss
     -->
 
-    {% for i in x %}
+    <div id="gain">
+        {% for i in x %}
+            <div class="gain_element" id="{{ i['unique_id'] }}" style="width: {{ round(l, 1) }}%;"></div>
+        {% endfor %}
+    </div>
 
-    k = i["gain_loss"]
-
-    {% if k > 0 %}
-
-    <!-- If gain or loss:
-         Scale to the largest element, y -->
-    l = (k/y)*50
-
-    <div class="gain_element" id="{{ i['unique_id'] }}" style="width: {{ round(l, 1) }}%;"></div>
-
-    {% else %}
-    
-    <!-- Don't want negative widths -->
-    l = (k/y)*(-50)
-
-    <div class="loss_element" id="{{ i['unique_id'] }}" style="width: {{ round(l, 1) }}%;"></div>
-
-    {% endif %}
-
-    {% endfor %}
+    <div id="loss">
+        {% for i in x %}
+            <div class="loss_element" id="{{ i['unique_id'] }}" style="width: {{ round(l, 1) }}%;"></div>
+        {% endfor %}
+    </div>
+    <!-- If gain or loss: Scale to the largest element, y. l = (k/y)*50 -->
 </div>
 {% endblock %}

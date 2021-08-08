@@ -130,10 +130,10 @@ def register():
         conn = psycopg2.connect(**params)
         cur =  conn.cursor()
 
+        # Check the username is unique in my table
         cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username,))
         rows = cur.fetchall()
 
-        # Database check
         if len(rows) == 1:
             return error_page("This username is taken, try another username")
 
@@ -143,12 +143,11 @@ def register():
         # Passed error checks, password hashed
         cur.execute("INSERT INTO users (username, password) VALUES (%s, %s);", (lower_username, hashed_password))
         
-        # Instead of redirecting to login we can be efficient and redirect to the index
+        # repeat query to get the id from the newly created user
         cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username,))
         rows = cur.fetchall()
         
-        # After first storing id in session
-        # Which satisfies our login_required function
+        # Storing user_id in session satisfies our login_required function
         session["user_id"] = rows[0][0]
 
         conn.commit()
@@ -156,6 +155,7 @@ def register():
         conn.close()
 
         flash(f"Registered and logged in as {username} successfully!", "success")
+        # Instead of redirecting to login we can be efficient and redirect, once login_required is satisifed, to the index
         return redirect("/")
     
     # User requesting the page (GET)
@@ -166,6 +166,7 @@ def register():
 def login():
     """Log user in"""
 
+    # If there is already a user_id in session
     if session.get("user_id"):
         flash("You are already logged in.", "primary")
         return redirect("/")
@@ -248,6 +249,7 @@ def create():
         
         id = session["user_id"]
         portfolio_name = request.form.get("portfolio_name")
+        lower_pfname = portfolio_name.lower()
         symbol = request.form.get("symbol")
         purchase_quantity = request.form.get("purchase_quantity")
 
@@ -264,7 +266,7 @@ def create():
         if not purchase_date:
             return error_page("Enter a date", 403)
         
-        # Convert input a datetime object so we can compare
+        # Convert string input to a date object so we can compare
         parsed_datetime = datetime.strptime(purchase_date, "%Y-%m-%d")
         parsed_date = parsed_datetime.date()
 
@@ -307,7 +309,7 @@ def create():
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         # We don't want a user to have portfolios with the same name
-        cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY portfolio_name", (id, portfolio_name))
+        cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY portfolio_name", (id, lower_pfname))
         rows = cur.fetchall()
         if len(rows) == 1:
             return error_page('You already have a portfolio with this name', 403)
@@ -325,19 +327,22 @@ def create():
             return error_page("No data found on the date entered for this symbol. Please refer to the link for supported symbols and check the date", 403)
 
         # data not empty
+
+        # We want the scan date used for our database that matches this price
+        # parsed_date is our input which is changed in scan
         scan_date = data["date"]
         purchase_price = data["price"]
 
         # All validity checks passed
 
         cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_price, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s, %s);",
-                    (upper_symbol, purchase_quantity, purchase_price, scan_date, portfolio_name, id))
+                    (upper_symbol, purchase_quantity, purchase_price, scan_date, lower_pfname, id))
         conn.commit()
         cur.close()
         conn.close()
 
-        flash(f"{purchase_quantity} shares of {upper_symbol} bought on \U0001F4C5 {scan_date} - saved to {portfolio_name}", "success")
-        flash(f"{portfolio_name} has been successfully created.", "success")
+        flash(f"{purchase_quantity} shares of {upper_symbol} bought on \U0001F4C5 {scan_date} - saved to {portfolio_name}!", "success")
+        flash(f"{portfolio_name} has been successfully created!", "success")
 
         # https://stackoverflow.com/questions/8552675/form-sending-error-flask
         # The buttons do the same thing except redirect to different pages
@@ -354,39 +359,42 @@ def create():
 def myportfolios(portfolio_name):
 
     id = session["user_id"]
-    now = datetime.now()
+    today = date.today()
     
     params = config()
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
-    cur.execute("SELECT symbol, SUM(purchase_quantity) AS sum_shares, purchase_date FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY symbol, purchase_date;", (id, portfolio_name))
+    # TODO TEST THIS GROUPING WITH PRICE
+    cur.execute("SELECT symbol, SUM(purchase_quantity) AS sum_shares, purchase_price, purchase_date FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY symbol, purchase_price, purchase_date;",
+                 (id, portfolio_name))
     portfolio = cur.fetchall()
     cur.close()
     conn.close()
+
+    # https://blog.scottlogic.com/2020/10/09/charts-with-flexbox.html
 
     x = []
 
     for row in portfolio:
         # Revisit to look for correct types here for dates
         # Functions.py takes date inputs and formats it as string YYYYMMDD for the URL
-        purchase_price = lookup(row[0], row[2])["price"]
-        current_price = lookup(row[0], now)["price"]
-        gain_loss = (purchase_price - current_price)*row[1]
-
-        date_nospace = row[2].strftime("%Y%m%d")
+        purchase_price = float(row[2])
+        current_price = float(scan(row[0], today)["price"])
+        gain_loss = round((purchase_price - current_price)*row[1], 2)
+        date_nospace = row[3].strftime("%Y%m%d")
         unique_id = row[0] + date_nospace
 
         z = [{'unique_id': unique_id, 'gain_loss': gain_loss}]
 
         x += z
     
-    # https://www.tutorialspoint.com/How-to-sort-the-objects-in-a-list-in-Python
-    def my_key(obj):
-        return obj['gain_loss']
+    # https://stackoverflow.com/a/73050
+    # https://stackoverflow.com/a/46013151
 
-    # 2 arrays of objects sorted
+    # 2 lists of dictionaries
     # x when sorted [{'unique_id': 'AAPL20210717', 'gain_loss': 16}, ...10, 9, 5, 4 , 1, 0, -1, -2, -14]
-    x = x.sort(key=my_key, reverse=True)
+
+    x = sorted(x, key=lambda a: a["gain_loss"], reverse=True)
 
     i = len(x) - 1
 
@@ -395,7 +403,7 @@ def myportfolios(portfolio_name):
     else:
         y = abs(x[i]["gain_loss"])
 
-    # I pass the largest element of both arrays
+    # I pass the largest element of both lists
 
     return render_template("portfolio.html", x=x, y=y, portfolio_name=portfolio_name)
 
@@ -432,7 +440,7 @@ def delete():
         # For each selected portfolio, delete the corresponding rows in shares
         for portfolio in portfolios:
             cur.execute("DELETE FROM shares where id = (%s) AND portfolio_name = (%s)", (id, portfolio))
-            flash(f"{portfolio} was successfully deleted.", success)
+            flash(f"{portfolio} was successfully deleted!", "success")
         
         conn.commit()
         cur.close()

@@ -393,13 +393,13 @@ def myportfolios(portfolio_name):
         
         # https://stackoverflow.com/a/27611281
 
-        # If we already have this variable in session use that
-        if session[unique_id + '_current']:
+        # Try to see if this variable is in session
+        try:
             # The data we are using only updates once per day (current price) which is slow enough
             # to not affect the user when storing and reusing it in session
             current_price = session[unique_id + '_current']
-
-        else:
+        
+        except KeyError:
             current_price = float(scan(row[0], today)["price"])
             # Store current price
             session[unique_id + '_current'] = current_price
@@ -409,8 +409,7 @@ def myportfolios(portfolio_name):
         # to get $ change in value
         net_change = (purchase_price - current_price)*row[1]
 
-        # TODO
-        # z = ...
+        z = [{'unique_id': unique_id, 'net': net_change}]
 
         x += z
     
@@ -422,22 +421,23 @@ def myportfolios(portfolio_name):
 
     # https://stackoverflow.com/a/73050
     # https://stackoverflow.com/a/46013151
-
-    # 2 lists of dictionaries
-    # x when sorted [{'unique_id': 'AAPL20210717', 'gain_loss': 16}, ...10, 9, 5, 4 , 1, 0, -1, -2, -14]
-
-    x = sorted(x, key=lambda a: a["gain_loss"], reverse=True)
-
+    x = sorted(x, key=lambda a: a["net"], reverse=True)
+    # x when sorted 
+    # [{'unique_id': 'a', 'net': 16},  ...'net': 10},  ..9},  ..5},  ..-14}]
+    
+    # Finding largest element to use as a parent to scale from
     i = len(x) - 1
-
-    if x[0]["gain_loss"] >= abs(x[i]["gain_loss"]):
-        y = x[0]["gain_loss"]
+    
+    if x[0]["net"] >= abs(x[i]["net"]):
+        y = abs(x[0]["net"])
     else:
-        y = abs(x[i]["gain_loss"])
+        y = abs(x[i]["net"])
+    
+    # Iterate over the list x, divide by parent, round to 4 decimal places
+    for j in x:
+        j["net"] = round((j["net"]/y), 4)
 
-    # I pass the largest element of both lists
-
-    return render_template("portfolio.html", x=x, y=y, portfolio_name=portfolio_name)
+    return render_template("portfolio.html", x=x, portfolio_name=portfolio_name)
 
 @app.route("/delete", methods=["GET", "POST"])
 @login_required

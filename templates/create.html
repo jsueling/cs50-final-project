@@ -7,27 +7,34 @@
 <br>
 <form id="form" action="/create" method="post">
     <div class="form-group">
-        <label for="portfolio_name"><b>Choose a name for your portfolio:</b></label><br><input autocomplete="off" autofocus class="form-control" name="portfolio_name" placeholder="MyPortfolio" type="text">
+        <label for="portfolio_name"><b>Choose a name for your portfolio:</b></label><br>
+        <input autocomplete="off" autofocus class="form-control" name="portfolio_name" placeholder="MyPortfolio" type="text">
     </div>
     <br>
     <h4>Please add your first stock below before creating:</h4>
     <!-- https://www.freecodecamp.org/news/how-to-use-html-to-open-link-in-new-tab/ -->
-    <p id="link">This application is limited to only support these symbols.<br><a href="https://iextrading.com/trading/eligible-symbols/" target="_blank" rel="noopener noreferrer">https://iextrading.com/trading/eligible-symbols/</a></p>
+    <p id="link">This application is limited to only support these symbols.<br>
+        <a href="https://iextrading.com/trading/eligible-symbols/" target="_blank" rel="noopener noreferrer">https://iextrading.com/trading/eligible-symbols/</a>
+    </p>
     <br>
     <div class="form-group">
-        <label for="symbol"><b>What is the symbol of the stock?</b></label><br><input autocomplete="off" class="form-control" name="symbol" placeholder="Symbol" type="text">
+        <label for="symbol"><b>What is the symbol of the stock?</b></label><br>
+        <input autocomplete="off" class="form-control" name="symbol" placeholder="Symbol" type="text">
     </div>
     <div class="form-group">
         <!-- https://www.techiedelight.com/restrict-html-input-text-box-to-allow-only-numeric-values/ -->
-        <label for="purchase_quantity"><b>How many did you purchase?</b></label><br><input autocomplete="off" class="form-control" name="purchase_quantity" placeholder="Quantity" type="number" min="1">
+        <label for="purchase_quantity"><b>How many did you purchase?</b></label><br>
+        <input autocomplete="off" class="form-control" name="purchase_quantity" placeholder="Quantity" type="number" min="1">
     </div>
     <div class="form-group nativeDatePicker">
         <!-- https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date -->
-        <label for="purchase_date"><b>When did you purchase?</b></label><br><input id="date1" autocomplete="off" class="form-control" name="purchase_date" min={{ min_date }} max={{ today }} type="date">
+        <label for="purchase_date"><b>When did you purchase?</b></label><br>
+        <input id="date1" autocomplete="off" class="form-control" name="purchase_date" min={{ min_date }} max={{ today }} type="date">
         <br><br><p>For days where the exchange is closed, we will take the price from the nearest trading day.</p>
     </div>
     <div class="form-group fallbackDatePicker">
-        <label for="fallback_purchasedate">When did you purchase?</label><br><input autocomplete="off" class="form-control" name="fallback_purchasedate" placeholder="YYYY-MM-DD" type="text">
+        <label for="fallback_purchasedate">When did you purchase?</label><br>
+        <input autocomplete="off" class="form-control" name="fallback_purchasedate" placeholder="YYYY-MM-DD" type="text">
         <br><br><p>For days where the exchange is closed, we will take the price from the nearest trading day.</p>
     </div>
     <br>
@@ -39,56 +46,6 @@
     </div>
 </form>
 
-<script>
-    // This script tests if browser supports input="date" and returns the compatible html
-    // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date#javascript
-    // IE11 input="date" falls back to "text"
+<script src="/static/create.js"></script>
 
-    // define variables
-    var nativePicker = document.querySelector('.nativeDatePicker');
-    var fallbackPicker = document.querySelector('.fallbackDatePicker');
-
-    // hide fallback initially
-    fallbackPicker.style.display = 'none';
-
-    // test whether a new date input falls back to a text input or not
-    var test = document.createElement('input');
-
-    // Sends 'Invalid Input' to console if error
-    try {
-    test.type = 'date';
-    } catch (e) {
-    console.log(e.description);
-    }
-
-    // if the test falls back to text
-    if(test.type === 'text') {
-    // hide the native picker and show the fallback
-    // .style.display = 'inline'
-    nativePicker.style.display = 'none';
-    fallbackPicker.style.display = 'inline';
-    }
-
-    // https://stackoverflow.com/questions/49863189/disable-weekends-on-html-5-input-type-date
-    // Takes the date this.value from the input, converts it into a day of the 
-    // week using Coordinated Universal time 0 through 6 where 1 is Monday
-    // If the day from input is Sat or Sun (0 or 6)
-    // Display a confirmation message, ask the user if he wants to continue
-    // if true (pressed OK) do nothing, the page continues as normal
-    // if false (pressed cancel) preventDefault to override the submit action
-    // set the date back to null
-
-    const form = document.getElementById("form");
-    const date1 = document.getElementById("date1");
-
-    form.addEventListener("submit", function(e){
-        let day = new Date(date1.value).getUTCDay();
-        if([6,0].includes(day)){
-            if(!confirm("The date selected is a weekend where exchanges are normally closed, Press OK if you want to continue.")){
-                e.preventDefault();
-                date1.value = '';
-            }
-        }
-    });
-</script>
 {% endblock %}

@@ -18,7 +18,7 @@
         <ul style="list-style-type:none;">
             <!-- https://flask.palletsprojects.com/en/2.0.x/quickstart/#url-building -->
             {% for row in names %}
-            <li href = "{{ url_for('myportfolios', portfolio_name=row[portfolio_name]) }}">{{ row[portfolio_name] }}</li>
+                <li href="/myportfolios/<{{ row[portfolio_name] }}>">{{ row[portfolio_name] }}</li>
             {% endfor %}
         </ul>
 

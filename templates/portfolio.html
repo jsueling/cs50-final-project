@@ -5,7 +5,6 @@
 <h1>{{ portfolio_name }}</h1>
 <br>
 <div id="full_bar">
-
     <!--
         Problems deciding how the divs are scaled
         If the gain_loss that is largest is always the same size on the screen will it look strange?
@@ -28,17 +27,8 @@
         all div elements are uniquely identified and still retain their $ gain/loss
     -->
 
-    <div id="gain">
-        {% for i in x %}
-            <div class="gain_element" id="{{ i['unique_id'] }}" style="width: {{ round(l, 1) }}%;"></div>
-        {% endfor %}
-    </div>
-
-    <div id="loss">
-        {% for i in x %}
-            <div class="loss_element" id="{{ i['unique_id'] }}" style="width: {{ round(l, 1) }}%;"></div>
-        {% endfor %}
-    </div>
-    <!-- If gain or loss: Scale to the largest element, y. l = (k/y)*50 -->
+    {% for i in x %}
+        <div class="gain_element" href='/share/<{{ i["unique_id"] }}>' style='flex: {{ i["net"] }};'></div>
+    {% endfor %}
 </div>
 {% endblock %}

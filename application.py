@@ -226,80 +226,15 @@ def logout():
 @login_required
 def create():
     
-    # https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
-    # Important: Client-side form validation is no substitute for validating on the server.
-    # It's easy for someone to modify the HTML, or bypass your 
-    # HTML entirely and submit the data directly to your server.
-    # If your server fails to validate the received data, disaster could 
-    # strike with data that is badly-formatted, too large, of the wrong type, etc.
-
-    # Both methods need access to these variables
-    today = date.today()
-    # https://iexcloud.io/docs/api/#historical-prices
-    # Iexcloud API only offers historical data >5years on paid plans
-    # 365 * 5 = 1825
-    # https://docs.python.org/3/library/datetime.html#timedelta-objects
-    min_date = today - timedelta(days=1825)
-
     if request.method =="POST":
-        
+
         id = session["user_id"]
         portfolio_name = request.form.get("portfolio_name")
-        lower_pfname = portfolio_name.lower()
-        symbol = request.form.get("symbol")
-        purchase_quantity = request.form.get("purchase_quantity")
-
-        # Internet explorer doesn't support input="date", degrades to input="text"
-        try:
-            # Native case with input="date"
-            # https://stackoverflow.com/questions/10434599/get-the-data-received-in-a-flask-request
-            purchase_date = request.form["purchase_date"]
-        except KeyError:
-            # KeyError when an element with that name doesn't exist
-            # So by elimination fallback:
-            purchase_date = request.form["fallback_purchasedate"]
-
-        if not purchase_date:
-            return error_page("Enter a date", 403)
-        
-        # Convert string input to a date object so we can compare
-        parsed_datetime = datetime.strptime(purchase_date, "%Y-%m-%d")
-        parsed_date = parsed_datetime.date()
-
-        # Prevent the user from entering a date out of these bounds, today and 5 years ago
-        if parsed_date < min_date:
-            # TODO Test lower bound Live
-            return error_page("This application is limited to only support historical price queries up to 5 years (1825 days) past", 403)
-        if parsed_date > today:
-            return error_page("You've entered a date in the future", 403)
 
         if not portfolio_name:
             return error_page("Enter a portfolio name", 403)
-        if not symbol:
-            return error_page("Enter a symbol", 403)
-        if not purchase_quantity:
-            return error_page("Enter a quantity", 403)
 
-        # https://pynative.com/python-check-user-input-is-number-or-string/
-        try:
-            # If casting as int fails we get a value error which means the input must be a float or a string
-            # No error means the input was an integer or string of an integer
-            val = int(purchase_quantity)
-        except ValueError:
-            try:
-                # cast as float
-                val = float(purchase_quantity)
-                # No error means the input was a float
-                return error_page("Quantity must be an integer", 403)
-            # By elimination the input is a string
-            except ValueError:
-                return error_page("Quantity must be in decimal digits, 403")
-        
-        # convert to int after error checks
-        purchase_quantity = int(purchase_quantity)
-
-        if purchase_quantity < 1:
-            return error_page("Quantity must be a non-zero positive number", 403)
+        lower_pfname = portfolio_name.lower()
 
         params = config()
         conn = psycopg2.connect(**params)
@@ -308,57 +243,24 @@ def create():
         # Even if portfolio_name is already UNIQUE in the portfolios table
         cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s) AND portfolio_name=(%s)", (id, lower_pfname))
         rows = cur.fetchall()
+
         if len(rows) == 1:
-            return error_page('You already have a portfolio with this name', 403)
+            return error_page('This portfolio name is taken, choose another portfolio name', 403)
         
-        # Check the symbol exists at IEX, whilst checking there is a price for the 
-        # given date which are both stored in the database.
+        # All tests passed
 
-        # scan and lookup used after all other checks so we are more efficient with our API calls
-
-        upper_symbol = symbol.upper()
-        
-        data = scan(upper_symbol, parsed_date)
-
-        if not data:
-            return error_page("No data found on the date entered for this symbol. Please refer to the link for supported symbols and check the date", 403)
-
-        # data not empty
-
-        # We want the scan date used for our database that matches this price
-        # parsed_date is our input which is changed in scan
-        scan_date = data["date"]
-        purchase_price = data["price"]
-
-        # All validity checks passed
-        
-        # THIS LINE WILL BE IN /CREATE
         cur.execute("INSERT INTO portfolios (id, portfolio_name) VALUES (%s, %s);", (id, lower_pfname))
-
-        # THIS LINE WILL BE IN /ADD
-        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_price, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s, %s);",
-                    (upper_symbol, purchase_quantity, purchase_price, scan_date, lower_pfname, id))
         conn.commit()
         cur.close()
         conn.close()
 
-        # /ADD
-        flash(f"{purchase_quantity} shares of {upper_symbol} bought on \U0001F4C5 {scan_date} - saved to {portfolio_name}!", "success")
-        
-        # /CREATE
         flash(f"{portfolio_name} has been successfully created!", "success")
-
-
-        # /ADD
-        # https://stackoverflow.com/questions/8552675/form-sending-error-flask
-        # The buttons do the same thing except redirect to different pages
-        if request.form["submit"] == "create":
-            return redirect("/")
-        else:
-            return redirect("/add")
+        
+        # User probably wants to add shares once a new portfolio is created
+        return redirect("/add")
 
     else:
-        return render_template("create.html", today=today, min_date=min_date)
+        return render_template("create.html")
 
 @app.route("/myportfolios/<portfolio_name>")
 @login_required
@@ -489,3 +391,135 @@ def delete():
         return redirect("/")
     else:
         return render_template("delete.html", names=names)
+
+@app.route("/add", methods=["GET", "POST"])
+@login_required
+def add():
+    
+    # https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
+    # Important: Client-side form validation is no substitute for validating on the server.
+    # It's easy for someone to modify the HTML, or bypass your 
+    # HTML entirely and submit the data directly to your server.
+    # If your server fails to validate the received data, disaster could 
+    # strike with data that is badly-formatted, too large, of the wrong type, etc.
+
+    # Both methods need access to these variables
+    today = date.today()
+    # https://iexcloud.io/docs/api/#historical-prices
+    # Iexcloud API only offers historical data >5years on paid plans
+    # 365 * 5 = 1825
+    # https://docs.python.org/3/library/datetime.html#timedelta-objects
+    min_date = today - timedelta(days=1825)
+
+    id = session["user_id"]
+    portfolio_name = request.form.get("portfolio_name")
+
+    if not portfolio_name:
+        return error_page("Choose a portfolio to add shares to", 403)
+
+    if request.method =="POST":
+
+        symbol = request.form.get("symbol")
+        purchase_quantity = request.form.get("purchase_quantity")
+
+        # Internet explorer doesn't support input="date", degrades to input="text"
+        try:
+            # Native case with input="date"
+            # https://stackoverflow.com/questions/10434599/get-the-data-received-in-a-flask-request
+            purchase_date = request.form["purchase_date"]
+        except KeyError:
+            # KeyError when an element with that name doesn't exist
+            # So by elimination fallback:
+            purchase_date = request.form["fallback_purchasedate"]
+
+        if not purchase_date:
+            return error_page("Enter a date", 403)
+        
+        # Convert string input to a date object so we can compare
+        parsed_datetime = datetime.strptime(purchase_date, "%Y-%m-%d")
+        parsed_date = parsed_datetime.date()
+
+        # Prevent the user from entering a date out of these bounds, today and 5 years ago
+        if parsed_date < min_date:
+            # TODO Test lower bound Live
+            return error_page("This application is limited to only support historical price queries up to 5 years (1825 days) past", 403)
+        if parsed_date > today:
+            return error_page("You've entered a date in the future", 403)
+
+        if not symbol:
+            return error_page("Enter a symbol", 403)
+        if not purchase_quantity:
+            return error_page("Enter a quantity", 403)
+
+        # https://pynative.com/python-check-user-input-is-number-or-string/
+        try:
+            # If casting as int fails we get a value error which means the input must be a float or a string
+            # No error means the input was an integer or string of an integer
+            val = int(purchase_quantity)
+        except ValueError:
+            try:
+                # cast as float
+                val = float(purchase_quantity)
+                # No error means the input was a float
+                return error_page("Quantity must be an integer", 403)
+            # By elimination the input is a string
+            except ValueError:
+                return error_page("Quantity must be in decimal digits, 403")
+        
+        # convert to int after error checks
+        purchase_quantity = int(purchase_quantity)
+
+        if purchase_quantity < 1:
+            return error_page("Quantity must be a non-zero positive number", 403)
+
+        # lookup() and scan()'s use here:
+        # Checks the symbol exists at IEX, whilst checking there is a price for the 
+        # given date which are then stored in the database.
+
+        # only call API after all other checks so we are more efficient
+
+        upper_symbol = symbol.upper()
+        
+        data = scan(upper_symbol, parsed_date)
+
+        if not data:
+            return error_page("No data found on the date entered for this symbol. Please refer to the link for supported symbols and check the date", 403)
+
+        # data not empty
+
+        # We want the scan date used for our database that matches this price
+        # parsed_date is our input which is changed in scan
+        scan_date = data["date"]
+        purchase_price = data["price"]
+
+        # All validity checks passed
+
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_price, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s, %s);",
+                    (upper_symbol, purchase_quantity, purchase_price, scan_date, lower_pfname, id))
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        flash(f"{purchase_quantity} shares of {upper_symbol} bought on \U0001F4C5 {scan_date} - saved to {portfolio_name}!", "success")
+
+        # https://stackoverflow.com/questions/8552675/form-sending-error-flask
+        # The buttons do the same thing except redirect to different pages
+        if request.form["submit"] == "single":
+            return redirect("/")
+        else:
+            return redirect("/add")
+
+    else:
+
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s)", (id,))
+        names = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        return render_template("add.html", today=today, min_date=min_date, names=names)

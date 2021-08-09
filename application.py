@@ -81,11 +81,18 @@ def index():
 
     id = session["user_id"]
 
+    # https://www.psycopg.org/docs/usage.html
+    # Set paramaters of database connection from the config file
     params = config()
+    # Open connection
     conn = psycopg2.connect(**params)
+    # Open a cursor
     cur = conn.cursor()
-    cur.execute("SELECT portfolio_name FROM shares where id = (%s) GROUP BY portfolio_name;", (id,))
+    # Execute my query
+    cur.execute("SELECT portfolio_name FROM portfolios where id = (%s)", (id,))
+    # Store the results
     names = cur.fetchall()
+    # close the cursor and the connection
     cur.close()
     conn.close()
 
@@ -96,7 +103,7 @@ def index():
 
     # The user has 1 porfolio, automatic redirect to that portfolio
     if len(names) == 1:
-        return redirect(f"/myportfolios/{names[0][0]}")
+        return redirect(f"/myportfolios/{names[0][1]}")
     else:
         return render_template("index.html", names=names, no_portfolios=no_portfolios)
 
@@ -104,11 +111,12 @@ def index():
 def register():
     """Register user"""
 
+    # If there is already a user_id in session
     if session.get("user_id"):
         flash("You are already logged in.", "primary")
         return redirect("/")
 
-    # User submitting register form
+    # User is submitting the form on trying to register (POST)
     if request.method == "POST":
         # User inputs
         username = request.form.get("username")
@@ -166,37 +174,26 @@ def register():
 def login():
     """Log user in"""
 
-    # If there is already a user_id in session
     if session.get("user_id"):
         flash("You are already logged in.", "primary")
         return redirect("/")
 
-    # User is submitting the form on trying to login (POST)
     if request.method =="POST":
 
-        # User inputs
         username = request.form.get("username")
         lower_username = username.lower()
         password = request.form.get("password")
 
-        # Form checks
         if not username:
             return error_page("You must enter a username", 403)
         if not password:
             return error_page("You must enter a password", 403)
 
-        # https://www.psycopg.org/docs/usage.html
-        # Set paramaters of database connection from the config file
         params = config()
-        # Open connection
         conn = psycopg2.connect(**params)
-        # Open a cursor
         cur = conn.cursor()
-        # Execute my query
         cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username,))
-        # Store the results
         rows = cur.fetchall()
-        # close the cursor and the connection
         cur.close()
         conn.close()
 
@@ -207,14 +204,13 @@ def login():
         if not check_password_hash(rows[0][2], password):
             return error_page("Incorrect password (Case sensitive)", 403)
         
-        # Passed Checks > Store current user ID
+        # Passed Checks -> Store current user ID
         session["user_id"] = rows[0][0]
         
         flash(f"Logged in as {username} successfully!", "success")
         # Successful login
         return redirect("/")
 
-    # User wants to GET the page
     else:
         return render_template("login.html")
 
@@ -309,7 +305,8 @@ def create():
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         # We don't want a user to have portfolios with the same name
-        cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY portfolio_name", (id, lower_pfname))
+        # Even if portfolio_name is already UNIQUE in the portfolios table
+        cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s) AND portfolio_name=(%s)", (id, lower_pfname))
         rows = cur.fetchall()
         if len(rows) == 1:
             return error_page('You already have a portfolio with this name', 403)
@@ -334,16 +331,25 @@ def create():
         purchase_price = data["price"]
 
         # All validity checks passed
+        
+        # THIS LINE WILL BE IN /CREATE
+        cur.execute("INSERT INTO portfolios (id, portfolio_name) VALUES (%s, %s);", (id, lower_pfname))
 
+        # THIS LINE WILL BE IN /ADD
         cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_price, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s, %s);",
                     (upper_symbol, purchase_quantity, purchase_price, scan_date, lower_pfname, id))
         conn.commit()
         cur.close()
         conn.close()
 
+        # /ADD
         flash(f"{purchase_quantity} shares of {upper_symbol} bought on \U0001F4C5 {scan_date} - saved to {portfolio_name}!", "success")
+        
+        # /CREATE
         flash(f"{portfolio_name} has been successfully created!", "success")
 
+
+        # /ADD
         # https://stackoverflow.com/questions/8552675/form-sending-error-flask
         # The buttons do the same thing except redirect to different pages
         if request.form["submit"] == "create":
@@ -437,6 +443,7 @@ def myportfolios(portfolio_name):
     for j in x:
         j["net"] = round((j["net"]/y), 4)
 
+    # portfolio_name is the argument passed to the route
     return render_template("portfolio.html", x=x, portfolio_name=portfolio_name)
 
 @app.route("/delete", methods=["GET", "POST"])
@@ -448,7 +455,7 @@ def delete():
     params = config()
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
-    cur.execute("SELECT portfolio_name FROM shares where id = (%s) GROUP BY portfolio_name;", (id,))
+    cur.execute("SELECT portfolio_name FROM portfolios where id = (%s)", (id,))
     names = cur.fetchall()
     cur.close()
     conn.close()
@@ -463,15 +470,16 @@ def delete():
         portfolios = request.form.getlist("portfolio")
 
         if not portfolios:
-            return error_page("Select portfolios you want to delete", 403)
+            return error_page("Select the portfolios you want to delete", 403)
 
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
 
-        # For each selected portfolio, delete the corresponding rows in shares
+        # For each selected portfolio, delete the corresponding rows in portfolio
+        # This delete query will cascade to the shares table deleting any row there with this portfolio_name
         for portfolio in portfolios:
-            cur.execute("DELETE FROM shares where id = (%s) AND portfolio_name = (%s)", (id, portfolio))
+            cur.execute("DELETE FROM portfolios where id = (%s) AND portfolio_name = (%s)", (id, portfolio))
             flash(f"{portfolio} was successfully deleted!", "success")
         
         conn.commit()

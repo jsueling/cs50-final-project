@@ -319,7 +319,11 @@ def myportfolios(portfolio_name):
         # to get $ change in value
         net_change = (purchase_price - current_price)*row[1]
 
-        z = [{'unique_id': unique_id, 'net': net_change}]
+        # Add sign key to distinguish between loss and gain later
+        if net_change < 0:
+            z = [{'unique_id': unique_id, 'net': net_change, 'sign': 'loss'}]
+        else:
+            z = [{'unique_id': unique_id, 'net': net_change, 'sign': 'gain'}]
 
         x += z
     
@@ -342,10 +346,18 @@ def myportfolios(portfolio_name):
         y = abs(x[0]["net"])
     else:
         y = abs(x[i]["net"])
-    
+
     # Iterate over the list x, divide by parent, round to 4 decimal places
     for j in x:
-        j["net"] = round((j["net"]/y), 4)
+        if j["net"] > 0:
+            j["net"] = round((j["net"]/y), 4)
+        else:
+            j["net"] = -1 * round((j["net"]/y), 4)
+    
+    # Working lists before and after this iteration, we are getting
+    # positive values which correspond to previous list, x
+    # FIXED The problem is splitting the list in 2 after this to style the 
+    # gain/loss elements as needed
 
     # portfolio_name is the argument passed to the route
     return render_template("portfolio.html", x=x, portfolio_name=portfolio_name)

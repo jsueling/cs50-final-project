@@ -28,7 +28,12 @@
     -->
 
     {% for i in x %}
-        <div class="gain_element" href='/share/<{{ i["unique_id"] }}>' style='flex: {{ i["net"] }};'></div>
+        {% if i["sign"] == "gain" %}
+            <div class="bar gain_element" style='flex: {{ i["net"] }};'></div>
+            <!-- '/share/<{{ i["unique_id"] }}>' -->
+        {% else %}
+            <div class="bar loss_element" style='flex: {{ i["net"] }};'></div>
+        {% endif %}
     {% endfor %}
 </div>
 {% endblock %}

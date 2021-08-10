@@ -9,23 +9,29 @@
 }
 
 .gain_element {
-    background-color: rgb(90, 255, 90);
-    margin: 0 2px 0 0;
-    height: 100%;
+    background-color: rgba(90, 255, 90, 0.5);
 }
 
 .loss_element {
-    background-color: rgb(255, 90, 90);
+    background-color: rgb(255, 90, 90, 0.5);
+}
+
+.bar {
     margin: 0 2px 0 0;
-}
-
-/* TODO CLEANUP STYLES.CSS AND PORTFOLIO_STYLES.CSS*/
-#gain {
+    transition: all 0.3s ease-in-out;
     display: flex;
-    align-items: stretch;
-    width: 50%;
+    height: 100%;
 }
 
-#loss {
-    display:flex
+.bar:hover{
+    flex: 2 !important;
+}
+
+/* https://www.w3schools.com/css/css_image_transparency.asp */
+.gain_element:hover {
+    background-color: rgba(90, 255, 90, 1);
+}
+
+.loss_element:hover {
+    background-color: rgba(255, 90, 90, 1);
 }

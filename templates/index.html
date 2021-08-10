@@ -13,18 +13,13 @@
             </p>
         </div>
     {% else %}
-        <h1>My portfolios</h1>
+        <h1 class="display-4">List of portfolios</h1>
         <br>
-        <ul style="list-style-type:none;">
-            <!-- https://flask.palletsprojects.com/en/2.0.x/quickstart/#url-building -->
-            {% for row in names %}
-                <li href="/myportfolios/<{{ row[portfolio_name] }}>">{{ row[portfolio_name] }}</li>
-            {% endfor %}
-        </ul>
-
-        <div id="outer">
-            <button class="inner btn btn-primary" href="/create">Create a new portfolio</button>
-            <button class="inner btn btn-primary" href="/delete">Delete a portfolio</button>
-        </div>
+        <br>
+        <!-- https://flask.palletsprojects.com/en/2.0.x/quickstart/#url-building -->
+        {% for row in portfolios %}
+            <h2><a href="/myportfolios/{{ row[0] }}" class="portfolio btn btn-primary">{{ row[0] }}</a></h2>
+            <br>
+        {% endfor %}
     {% endif %}
 {% endblock %}

@@ -3,13 +3,15 @@
 {% block title %}Create{% endblock %}
 {% block create %}active{% endblock %}
 {% block main %}
-    <h1>Create a New Portfolio</h1>
+    <h1 class="display-4">Create a New Portfolio</h1>
+    <br>
     <br>
     <form id="form" action="/create" method="post">
         <div class="form-group">
             <label for="portfolio_name"><b>Choose a name for your portfolio:</b></label><br>
             <input autocomplete="off" autofocus class="form-control" name="portfolio_name" placeholder="MyPortfolio" type="text">
         </div>
+        <br>
         <button class="inner btn btn-primary" type="submit">Create</button>
     </form>
 {% endblock %}

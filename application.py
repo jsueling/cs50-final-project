@@ -89,23 +89,25 @@ def index():
     # Open a cursor
     cur = conn.cursor()
     # Execute my query
-    cur.execute("SELECT portfolio_name FROM portfolios where id = (%s)", (id,))
+    cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) GROUP BY portfolio_name", (id,))
     # Store the results
-    names = cur.fetchall()
+    shares = cur.fetchall()
+    cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s)", (id,))
+    portfolios = cur.fetchall()
     # close the cursor and the connection
     cur.close()
     conn.close()
 
     no_portfolios = False
 
-    if not names:
+    if not shares and not portfolios:
         no_portfolios = True
-
+    
     # The user has 1 porfolio, automatic redirect to that portfolio
-    if len(names) == 1:
-        return redirect(f"/myportfolios/{names[0][1]}")
+    if len(portfolios) == 1 and len(shares) > 0:
+        return redirect(f"/myportfolios/{portfolios[0][0]}")
     else:
-        return render_template("index.html", names=names, no_portfolios=no_portfolios)
+        return render_template("index.html", portfolios=portfolios, no_portfolios=no_portfolios)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -254,7 +256,7 @@ def create():
         cur.close()
         conn.close()
 
-        flash(f"{portfolio_name} has been successfully created!", "success")
+        flash(f"{lower_pfname} has been successfully created!", "success")
         
         # User probably wants to add shares once a new portfolio is created
         return redirect("/add")
@@ -357,11 +359,12 @@ def delete():
     params = config()
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
-    cur.execute("SELECT portfolio_name FROM portfolios where id = (%s)", (id,))
+    cur.execute("SELECT portfolio_name FROM portfolios WHERE id = (%s)", (id,))
     names = cur.fetchall()
     cur.close()
     conn.close()
 
+    # User restricted from this page if he has no portfolios to delete
     if not names:
         flash("No portfolios detected - you have been redirected here automatically.", "primary")
         return redirect("/create")
@@ -381,9 +384,8 @@ def delete():
         # For each selected portfolio, delete the corresponding rows in portfolio
         # This delete query will cascade to the shares table deleting any row there with this portfolio_name
         for portfolio in portfolios:
-            cur.execute("DELETE FROM portfolios where id = (%s) AND portfolio_name = (%s)", (id, portfolio))
+            cur.execute("DELETE FROM portfolios WHERE id = (%s) AND portfolio_name = (%s)", (id, portfolio))
             flash(f"{portfolio} was successfully deleted!", "success")
-        
         conn.commit()
         cur.close()
         conn.close()
@@ -412,16 +414,16 @@ def add():
     min_date = today - timedelta(days=1825)
 
     id = session["user_id"]
-    portfolio_name = request.form.get("portfolio_name")
-
-    if not portfolio_name:
-        return error_page("Choose a portfolio to add shares to", 403)
 
     if request.method =="POST":
 
+        portfolio_name = request.form.get("portfolio_name")
         symbol = request.form.get("symbol")
         purchase_quantity = request.form.get("purchase_quantity")
 
+        if not portfolio_name:
+            return error_page("Choose a portfolio to add shares to", 403)
+        
         # Internet explorer doesn't support input="date", degrades to input="text"
         try:
             # Native case with input="date"
@@ -498,7 +500,7 @@ def add():
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_price, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s, %s);",
-                    (upper_symbol, purchase_quantity, purchase_price, scan_date, lower_pfname, id))
+                    (upper_symbol, purchase_quantity, purchase_price, scan_date, portfolio_name, id))
         conn.commit()
         cur.close()
         conn.close()
@@ -512,6 +514,7 @@ def add():
         else:
             return redirect("/add")
 
+    # request.method =="GET"
     else:
 
         params = config()
@@ -522,4 +525,9 @@ def add():
         cur.close()
         conn.close()
 
-        return render_template("add.html", today=today, min_date=min_date, names=names)
+        # User restricted from adding shares to portfolios if he has no portfolios
+        if not names:
+            flash("No portfolios detected - you have been redirected here automatically.", "primary")
+            return redirect("/create")
+        else:
+            return render_template("add.html", today=today, min_date=min_date, names=names)

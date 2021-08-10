@@ -2,14 +2,17 @@
 
 {% block title %}Delete{% endblock %}
 {% block main %}
-<h1>Delete a Portfolio</h1>
+<h1 class="display-4">Delete a Portfolio</h1>
+<br>
 <br>
 <form action="/delete" method="post">
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/checkbox -->
     {% for row in names %}
-        <input type="checkbox" id='{{ names[0]["porfolio_name"] }}' name="portfolio" value='{{ names[0]["porfolio_name"] }}'>
-        <label for='{{ names[0]["porfolio_name"] }}'>{{ names[0]["porfolio_name"] }}</label>
+        <input class="checkbox_radio" type="checkbox" id='{{ row[0] }}' name="portfolio" value='{{ row[0] }}'>
+        <label for='{{ row[0] }}'><h3>{{ row[0] }}</h3></label>
+        <br>
     {% endfor %}
+    <br>
     <button id="button" class="btn btn-primary" type="submit" disabled>Delete</button>
 </form>
 

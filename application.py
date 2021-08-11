@@ -283,6 +283,9 @@ def myportfolios(portfolio_name):
     cur.close()
     conn.close()
 
+    if not portfolio:
+        return error_page("You have no portfolio with this name", 403)
+
     # https://blog.scottlogic.com/2020/10/09/charts-with-flexbox.html
 
     x = []
@@ -298,7 +301,7 @@ def myportfolios(portfolio_name):
         unique_id = row[0] + date_nospace
         # Unique ID used:
         # 1. as a href to a shares route for a more explicit breakdown
-        # and also the ability to delete this single purchase from there portfolio
+        # and also the ability to delete this single purchase from their portfolio
         # 2. as a variable name for session to store current_price rather than calling API again
         
         # https://stackoverflow.com/a/27611281
@@ -311,27 +314,29 @@ def myportfolios(portfolio_name):
         
         except KeyError:
             current_price = float(scan(row[0], today)["price"])
-            # Store current price
+            # Store current price for repeat use
             session[unique_id + '_current'] = current_price
 
         purchase_price = float(row[2])
         # Difference in price * Quantity
         # to get $ change in value
-        net_change = (purchase_price - current_price)*row[1]
+        net_change = (current_price - purchase_price)*row[1]
 
-        # Add sign key to distinguish between loss and gain later
+        net_percent = round((net_change/purchase_price)*100, 2)
+
+        # Add percentage key for the html later
         if net_change < 0:
-            z = [{'unique_id': unique_id, 'net': net_change, 'sign': 'loss'}]
+            z = [{'unique_id': unique_id, 'net': net_change, 'percentage': net_percent}]
         else:
-            z = [{'unique_id': unique_id, 'net': net_change, 'sign': 'gain'}]
+            z = [{'unique_id': unique_id, 'net': net_change, 'percentage': net_percent}]
 
         x += z
-    
-        purchase_overall += purchase_price
-        current_overall += current_price
-    
+
+        current_overall += current_price*row[1]
+        purchase_overall += purchase_price*row[1]
+
     net_overall = current_overall - purchase_overall
-    net_percentage = round((net_overall/purchase_overall)*100, 2)
+    net_overallpercent = round((net_overall/purchase_overall)*100, 2)
 
     # https://stackoverflow.com/a/73050
     # https://stackoverflow.com/a/46013151
@@ -354,13 +359,13 @@ def myportfolios(portfolio_name):
         else:
             j["net"] = -1 * round((j["net"]/y), 4)
     
-    # Working lists before and after this iteration, we are getting
-    # positive values which correspond to previous list, x
-    # FIXED The problem is splitting the list in 2 after this to style the 
-    # gain/loss elements as needed
+    # Explanation:
+    # j["net"] will now be used as a flex value ranging from 0 to 1 for all j in x
+    # so j's bar size on the page relative to the parent is the same as
+    # its gain/loss relative to the parent
 
     # portfolio_name is the argument passed to the route
-    return render_template("portfolio.html", x=x, portfolio_name=portfolio_name)
+    return render_template("portfolio.html", x=x, portfolio_name=portfolio_name, str=str, net_overall=net_overall, net_overallpercent=net_overallpercent)
 
 @app.route("/delete", methods=["GET", "POST"])
 @login_required

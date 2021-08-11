@@ -2,38 +2,66 @@
 
 {% block title %}{{ portfolio_name }}{% endblock %}
 {% block main %}
-<h1 class="display-4">{{ portfolio_name }}</h1>
+<h1 class="display-1">{{ portfolio_name }}</h1>
+<br>
+<h3>Net Profit at today's prices:</h3>
+<br>
+{% if net_overall < 0 %}
+    <div>
+        <span class="inner fa fa-caret-down fa-2x"></span>
+        &nbsp&nbsp<h2 class=" inner loss_title">{{ net_overall | usd }}</h2>
+    </div>
+    <br>
+    <div>
+        <span class="inner fa fa-caret-down fa-2x"></span>
+        &nbsp&nbsp&nbsp<h2 class="inner loss_title">{{ net_overallpercent }}%</h2>
+    </div>
+{% else %}
+    <div>
+        <span class="inner fa fa-caret-up fa-2x"></span>
+        &nbsp&nbsp<h2 class=" inner gain_title">{{ net_overall | usd }}</h2>
+    </div>
+    <br>
+    <div>
+        <span class="inner fa fa-caret-up fa-2x"></span>
+        &nbsp&nbsp&nbsp<h2 class="inner gain_title">{{ net_overallpercent }}%</h2>
+    </div>
+{% endif %}
+<br>
 <br>
 <div id="full_bar">
     <!--
         Problems deciding how the divs are scaled
-        If the gain_loss that is largest is always the same size on the screen will it look strange?
-        A loss of 10% and a gain of 1000% will look the same drawn on the page if they are the largest items
-        Not if the user is comparing only against a single portfolio at once
-        Why could it be good?
-        Excessively small/large gains/losses in a single portfolio look odd/not visible to the user
-        but also the largest gain or loss is the most important detail to the user in tracking his/her progress
-        From application.py:
-        1 sorted arrays of objects, x
-            which contain key ID for the transaction in sharedate form
-            and gain_loss in $
-        The largest gain_loss in $ form, y
 
-        What the functions do:
-        Displays all the results visually of a portfolio first separated by gain or loss
-        then ordered by most to least gained/lost
-        by creating empty divs all scaled to a parent (which is the largest gain/loss 
-        which has width 50%) to show relative performance
-        all div elements are uniquely identified and still retain their $ gain/loss
+        Since we are scaling off the largest gain/loss in a users portfolio the parent
+        element always appears the same size on the page which could be problematic
+
+        Using absolute sizing, extreme gains/losses could look odd/not visible to the user
+        
+        The largest gain or loss is arguably the most important detail to 
+        the user in tracking their relative portfolio progress
+
+        For each element in x: if gain key was assigned, group with gain elements, style color green
+        else style red for loss. Create new attribute data-id, manipulate a string using slicing/concatenation for use in CSS
     -->
-
     {% for i in x %}
-        {% if i["sign"] == "gain" %}
-            <div class="bar gain_element" style='flex: {{ i["net"] }};'></div>
-            <!-- '/share/<{{ i["unique_id"] }}>' -->
+        {% if i["percentage"] > 0 %}
+            <div class="bar gain_element" data-link="{{ '/share/' + i['unique_id'] }}" data-id="{{ (i['unique_id'])[:-8] + ' +' + str(i['percentage']) + '%' }}" style='flex: {{ i["net"] }};'></div>
         {% else %}
-            <div class="bar loss_element" style='flex: {{ i["net"] }};'></div>
+            <div class="bar loss_element" data-link="{{ '/share/' + i['unique_id'] }}" data-id="{{ (i['unique_id'])[:-8] + ' ' + str(i['percentage']) + '%' }}" style='flex: {{ i["net"] }};'></div>
         {% endif %}
     {% endfor %}
 </div>
+
+<script src=/static/portfolio.js></script>
+
+<!-- <p>
+    Click the element for a link to a breakdown
+    of that individual element including date purchased
+    and $ gained
+    Duplicates of shares are shown
+    because they were bought at different prices (dates)
+    So you can compare how you are performing
+    on that specific purchase (Combination of price and share)
+</p> -->
 {% endblock %}

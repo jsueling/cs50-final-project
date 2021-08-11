@@ -78,3 +78,16 @@ h1 {
 .checkbox_radio {
     margin-right: 30px;
 }
+
+.alert {
+    width: 70%;
+    margin: auto;
+}
+
+.fa-caret-up {
+    color: rgb(55, 110, 55);
+}
+
+.fa-caret-down {
+    color: rgb(161, 37, 37);
+}

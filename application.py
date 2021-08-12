@@ -1,5 +1,6 @@
 import os
 import psycopg2
+import re
 
 from config import config
 from flask import Flask, flash, render_template, redirect, request, session
@@ -105,7 +106,7 @@ def index():
     
     # The user has 1 porfolio, automatic redirect to that portfolio
     if len(portfolios) == 1 and len(shares) > 0:
-        return redirect(f"/myportfolios/{portfolios[0][0]}")
+        return redirect(f"/portfolio/{portfolios[0][0]}")
     else:
         return render_template("index.html", portfolios=portfolios, no_portfolios=no_portfolios)
 
@@ -264,9 +265,9 @@ def create():
     else:
         return render_template("create.html")
 
-@app.route("/myportfolios/<portfolio_name>")
+@app.route("/portfolio/<portfolio_name>")
 @login_required
-def myportfolios(portfolio_name):
+def portfolio(portfolio_name):
 
     # OVERALL % CHANGE AND $ VALUE, LARGE
 
@@ -548,3 +549,57 @@ def add():
             return redirect("/create")
         else:
             return render_template("add.html", today=today, min_date=min_date, names=names)
+
+@app.route("/portfolio/<portfolio_name>/share/<unique_id>")
+@login_required
+def share(portfolio_name, unique_id):
+    
+    # https://stackoverflow.com/a/41369873
+
+    id = session["user_id"]
+
+    # https://docs.python.org/3/library/re.html#re.split
+    a = re.split('(\d+)', unique_id)
+
+    # a is now ['AAPL', '20210811']
+    symbol = a[0]
+    purchase_date = a[1]
+
+    # Convert to a datetime object for lookup()
+    date_input = datetime.strptime(purchase_date, "%Y%m%d")
+
+    purchase_date = date_input.strftime("%Y-%m-%d")
+
+    # Try fetch current price from session
+    try:
+        current_price = session[unique_id + '_current']
+
+    # Doesn't exist in session
+    except KeyError:
+        data = scan(row[0], today)
+
+        if not data:
+            return error_page("No data found on the date entered for this symbol. Please refer to the link for supported symbols and check the date", 403)
+        
+        current_price = float(data["price"])
+        session[unique_id + '_current'] = current_price
+    
+    params = config()
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+    # Potential error if different prices on the same day but should only be a problem using sandbox
+    cur.execute("SELECT symbol, SUM(purchase_quantity), purchase_price, purchase_date FROM shares WHERE id=(%s) AND symbol=(%s) AND purchase_date=(%s) AND portfolio_name=(%s) GROUP BY symbol, purchase_price, purchase_date;",
+                 (id, symbol, date_input, portfolio_name))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    if not rows:
+        return error_page(f"{portfolio_name} has no record of buying {symbol} on {date_input}", 403)
+    
+    if request.method=="POST":
+        # TODO Delete this share
+        return redirect("/")
+    else:
+        # TODO Decide what to return as information to the user
+        return render_template("share.html", symbol=symbol, purchase_date=purchase_date)

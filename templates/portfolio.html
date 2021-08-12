@@ -46,9 +46,9 @@
     -->
     {% for i in x %}
         {% if i["percentage"] > 0 %}
-            <div class="bar gain_element" data-link="{{ '/share/' + i['unique_id'] }}" data-id="{{ (i['unique_id'])[:-8] + ' +' + str(i['percentage']) + '%' }}" style='flex: {{ i["net"] }};'></div>
+            <div class="bar gain_element" data-link="{{ url_for('share', unique_id=i['unique_id'], portfolio_name=portfolio_name) }}" data-id="{{ (i['unique_id'])[:-8] + ' +' + str(i['percentage']) + '%' }}" style='flex: {{ i["net"] }};'></div>
         {% else %}
-            <div class="bar loss_element" data-link="{{ '/share/' + i['unique_id'] }}" data-id="{{ (i['unique_id'])[:-8] + ' ' + str(i['percentage']) + '%' }}" style='flex: {{ i["net"] }};'></div>
+            <div class="bar loss_element" data-link="{{ url_for('share', unique_id=i['unique_id'], portfolio_name=portfolio_name) }}" data-id="{{ (i['unique_id'])[:-8] + ' ' + str(i['percentage']) + '%' }}" style='flex: {{ i["net"] }};'></div>
         {% endif %}
     {% endfor %}
 </div>

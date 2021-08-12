@@ -12,13 +12,23 @@
                 <a class="btn btn-primary btn-lg" href="/create" role="button">Get Started!</a>
             </p>
         </div>
+        <!-- 
+            <p> Welcome to MyPortfolios, a simple web application that emphasises the
+            visualisation of stock portfolios with the goal of enhancing the user experience
+            through better decisions and better user satisfaction.
+            
+            Once registered you have the freedom to create or replicate portfolios as you wish
+            The application contacts the iexcloud API to display current information on the value of your portfolios
+            
+            </p>
+        -->
     {% else %}
         <h1 class="display-4">List of portfolios</h1>
         <br>
         <br>
         <!-- https://flask.palletsprojects.com/en/2.0.x/quickstart/#url-building -->
         {% for row in portfolios %}
-            <h2><a href="/myportfolios/{{ row[0] }}" class="portfolio btn btn-primary">{{ row[0] }}</a></h2>
+            <h2><a href="/portfolio/{{ row[0] }}" class="portfolio btn btn-primary">{{ row[0] }}</a></h2>
             <br>
         {% endfor %}
     {% endif %}

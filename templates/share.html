@@ -1,0 +1,7 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ symbol + ' ' + purchase_date }}{% endblock %}
+{% block main %}
+<h1 class="display-4">{{ symbol + ' ' + purchase_date }}</h1>
+<!-- Show what portfolio this is in somewhere using {{ portfolio_name }} -->
+{% endblock %}

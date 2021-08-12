@@ -77,8 +77,8 @@ if not os.environ.get("API_KEY"):
 @app.route("/")
 @login_required
 def index():
-    # For a user that has used the website (easiest test is to check for rows in SQL table) I want
-    # to return to them a list of their portfolios
+    # For a user that has used the website (easiest test is to check for rows in SQL table)
+    # I want to return to them a list of their portfolios
 
     id = session["user_id"]
 
@@ -90,7 +90,8 @@ def index():
     # Open a cursor
     cur = conn.cursor()
     # Execute my query
-    cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) GROUP BY portfolio_name", (id,))
+    cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) GROUP BY portfolio_name", 
+                (id,))
     # Store the results
     shares = cur.fetchall()
     cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s)", (id,))
@@ -108,7 +109,8 @@ def index():
     if len(portfolios) == 1 and len(shares) > 0:
         return redirect(f"/portfolio/{portfolios[0][0]}")
     else:
-        return render_template("index.html", portfolios=portfolios, no_portfolios=no_portfolios)
+        return render_template("index.html", portfolios=portfolios, 
+        no_portfolios=no_portfolios)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -152,7 +154,8 @@ def register():
         hashed_password = generate_password_hash(password)
 
         # Passed error checks, password hashed
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s);", (lower_username, hashed_password))
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s);",
+                     (lower_username, hashed_password))
         
         # repeat query to get the id from the newly created user
         cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username,))
@@ -166,7 +169,8 @@ def register():
         conn.close()
 
         flash(f"Registered and logged in as {username} successfully!", "success")
-        # Instead of redirecting to login we can be efficient and redirect, once login_required is satisifed, to the index
+        # Instead of redirecting to login we can be efficient and redirect,
+        # once login_required is satisifed, to the index
         return redirect("/")
     
     # User requesting the page (GET)
@@ -244,7 +248,8 @@ def create():
         cur = conn.cursor()
         # We don't want a user to have portfolios with the same name
         # Even if portfolio_name is already UNIQUE in the portfolios table
-        cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s) AND portfolio_name=(%s)", (id, lower_pfname))
+        cur.execute("SELECT portfolio_name FROM portfolios WHERE portfolio_name=(%s)",
+                     (lower_pfname,))
         rows = cur.fetchall()
 
         if len(rows) == 1:
@@ -276,7 +281,9 @@ def portfolio(portfolio_name):
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
     # TODO TEST THIS GROUPING WITH PRICE
-    cur.execute("SELECT symbol, SUM(purchase_quantity) AS sum_shares, purchase_price, purchase_date FROM shares WHERE id=(%s) AND portfolio_name=(%s) GROUP BY symbol, purchase_price, purchase_date;",
+    cur.execute("SELECT symbol, SUM(purchase_quantity) AS sum_shares, purchase_price, purchase_date \
+                 FROM shares WHERE id=(%s) AND portfolio_name=(%s) \
+                 GROUP BY symbol, purchase_price, purchase_date;",
                  (id, portfolio_name))
     portfolio = cur.fetchall()
     cur.close()
@@ -374,7 +381,8 @@ def portfolio(portfolio_name):
             j["flex"] = -1 * round((j["flex"]/y), 4)
 
     # portfolio_name is the argument passed to the route /portfolio/<portfolio_name>
-    return render_template("portfolio.html", x=x, portfolio_name=portfolio_name, str=str, net_overall=net_overall, net_overallpercent=net_overallpercent)
+    return render_template("portfolio.html", x=x, portfolio_name=portfolio_name, str=str,
+                             net_overall=net_overall, net_overallpercent=net_overallpercent)
 
 @app.route("/delete", methods=["GET", "POST"])
 @login_required
@@ -470,7 +478,8 @@ def add():
         # Prevent the user from entering a date out of these bounds, today and 5 years ago
         if parsed_date < min_date:
             # TODO Test lower bound Live
-            return error_page("This application is limited to only support historical price queries up to 5 years (1825 days) past", 403)
+            return error_page("This application is limited to only support historical \
+                                price queries up to 5 years (1825 days) past", 403)
         if parsed_date > today:
             return error_page("You've entered a date in the future", 403)
 
@@ -481,7 +490,8 @@ def add():
 
         # https://pynative.com/python-check-user-input-is-number-or-string/
         try:
-            # If casting as int fails we get a value error which means the input must be a float or a string
+            # If casting as int fails we get a value error which means 
+            # the input must be a float or a string
             # No error means the input was an integer or string of an integer
             val = int(purchase_quantity)
         except ValueError:
@@ -511,7 +521,8 @@ def add():
         data = scan(upper_symbol, parsed_date)
 
         if not data:
-            return error_page("No data found on the date entered for this symbol. Please refer to the link for supported symbols and check the date", 403)
+            return error_page("No data found on the date entered for this symbol. \
+                                Please refer to the link for supported symbols and check the date", 403)
 
         # data not empty
 
@@ -525,7 +536,8 @@ def add():
         params = config()
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
-        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_price, purchase_date, portfolio_name, id) VALUES (%s, %s, %s, %s, %s, %s);",
+        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_price, purchase_date, \
+                    portfolio_name, id) VALUES (%s, %s, %s, %s, %s, %s);",
                     (upper_symbol, purchase_quantity, purchase_price, scan_date, portfolio_name, id))
         conn.commit()
         cur.close()
@@ -588,7 +600,8 @@ def share(portfolio_name, unique_id):
         data = scan(row[0], today)
 
         if not data:
-            return error_page("No data found on the date entered for this symbol. Please refer to the link for supported symbols and check the date", 403)
+            return error_page("No data found on the date entered for this symbol. \
+                                Please refer to the link for supported symbols and check the date", 403)
         
         current_price = float(data["price"])
         session[unique_id + '_current'] = current_price
@@ -597,14 +610,18 @@ def share(portfolio_name, unique_id):
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
     # Potential error if different prices on the same day but should only be a problem using sandbox
-    cur.execute("SELECT symbol, SUM(purchase_quantity), purchase_price, purchase_date FROM shares WHERE id=(%s) AND symbol=(%s) AND purchase_date=(%s) AND portfolio_name=(%s) GROUP BY symbol, purchase_price, purchase_date;",
-                 (id, symbol, date_input, portfolio_name))
+    cur.execute("SELECT symbol, SUM(purchase_quantity), purchase_price, purchase_date FROM shares \
+                WHERE id=(%s) AND symbol=(%s) AND purchase_date=(%s) AND portfolio_name=(%s) \
+                GROUP BY symbol, purchase_price, purchase_date;", \
+                (id, symbol, date_input, portfolio_name))
+
     rows = cur.fetchall()
     cur.close()
     conn.close()
 
     if not rows:
-        return error_page(f"{portfolio_name} has no record of buying {symbol} on {date_input}", 403)
+        return error_page(f"{portfolio_name} has no record of \
+                            buying {symbol} on {date_input}", 403)
     
     if request.method=="POST":
         # TODO Delete this share

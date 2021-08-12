@@ -43,12 +43,14 @@
 
         For each element in x: if gain key was assigned, group with gain elements, style color green
         else style red for loss. Create new attribute data-id, manipulate a string using slicing/concatenation for use in CSS
+        All dates will be 8 digit strings at the end of unique_id so the rest of the string is the symbol
+        cast i['contribution'] as a string to concatenate
     -->
     {% for i in x %}
-        {% if i["percentage"] > 0 %}
-            <div class="bar gain_element" data-link="{{ url_for('share', unique_id=i['unique_id'], portfolio_name=portfolio_name) }}" data-id="{{ (i['unique_id'])[:-8] + ' +' + str(i['percentage']) + '%' }}" style='flex: {{ i["net"] }};'></div>
+        {% if i["contribution"] > 0 %}
+            <div class="bar gain_element" data-link="{{ url_for('share', unique_id=i['unique_id'], portfolio_name=portfolio_name) }}" data-id="{{ (i['unique_id'])[:-8] + ' +' + str(i['contribution']) + '%' }}" style='flex: {{ i["flex"] }};'></div>
         {% else %}
-            <div class="bar loss_element" data-link="{{ url_for('share', unique_id=i['unique_id'], portfolio_name=portfolio_name) }}" data-id="{{ (i['unique_id'])[:-8] + ' ' + str(i['percentage']) + '%' }}" style='flex: {{ i["net"] }};'></div>
+            <div class="bar loss_element" data-link="{{ url_for('share', unique_id=i['unique_id'], portfolio_name=portfolio_name) }}" data-id="{{ (i['unique_id'])[:-8] + ' ' + str(i['contribution']) + '%' }}" style='flex: {{ i["flex"] }};'></div>
         {% endif %}
     {% endfor %}
 </div>
@@ -63,5 +65,9 @@
     because they were bought at different prices (dates)
     So you can compare how you are performing
     on that specific purchase (Combination of price and share)
+
+    Mouseover the bar elements to show the contribution of each purchase towards net profit
+
+    Click for an in-depth breakdown of that purchase, including date purcahsed, the performance against itself
 </p> -->
 {% endblock %}

@@ -219,8 +219,8 @@ def login():
 
 @app.route("/logout")
 @login_required
-# User must be logged in to logout
 def logout():
+    # User must be logged in to logout
     session.clear()
     flash("Logged out successfully!", "success")
     return redirect("/login")
@@ -268,9 +268,7 @@ def create():
 @app.route("/portfolio/<portfolio_name>")
 @login_required
 def portfolio(portfolio_name):
-
-    # OVERALL % CHANGE AND $ VALUE, LARGE
-
+    
     id = session["user_id"]
     today = date.today()
     
@@ -301,9 +299,9 @@ def portfolio(portfolio_name):
         # E.g. AAPL20210808
         unique_id = row[0] + date_nospace
         # Unique ID used:
-        # 1. as a href to a shares route for a more explicit breakdown
+        # 1. As a href to a share route for a more explicit breakdown
         # and also the ability to delete this single purchase from their portfolio
-        # 2. as a variable name for session to store current_price rather than calling API again
+        # 2. As a variable name for session to store current_price rather than calling API again
         
         # https://stackoverflow.com/a/27611281
 
@@ -319,17 +317,20 @@ def portfolio(portfolio_name):
             session[unique_id + '_current'] = current_price
 
         purchase_price = float(row[2])
+
         # Difference in price * Quantity
         # to get $ change in value
         net_change = (current_price - purchase_price)*row[1]
 
-        net_percent = round((net_change/purchase_price)*100, 2)
-
-        # Add percentage key for the html later
+        # The html will need all of these values
+        # the values for 'contribution' and 'flex' are changed further down
+        # 'flex' is used to give the flex value of each element in the horizontal stacked bar chart
+        # 'contribution' is the contribution of that purchase to the whole portfolio as a percentage.
+        # It also separates a gain from a loss because flex cannot take negative values
         if net_change < 0:
-            z = [{'unique_id': unique_id, 'net': net_change, 'percentage': net_percent}]
+            z = [{'unique_id': unique_id, 'flex': net_change, 'contribution': net_change}]
         else:
-            z = [{'unique_id': unique_id, 'net': net_change, 'percentage': net_percent}]
+            z = [{'unique_id': unique_id, 'flex': net_change, 'contribution': net_change}]
 
         x += z
 
@@ -341,31 +342,38 @@ def portfolio(portfolio_name):
 
     # https://stackoverflow.com/a/73050
     # https://stackoverflow.com/a/46013151
-    x = sorted(x, key=lambda a: a["net"], reverse=True)
+    x = sorted(x, key=lambda a: a["flex"], reverse=True)
     # x when sorted 
-    # [{'unique_id': 'a', 'net': 16},  ...'net': 10},  ..9},  ..5},  ..-14}]
+    # [{'unique_id': 'a', 'flex': 16},  ...'flex': 10},  ..9},  ..5},  ..-14}]
     
     # Finding largest element to use as a parent to scale from
     i = len(x) - 1
     
-    if x[0]["net"] >= abs(x[i]["net"]):
-        y = abs(x[0]["net"])
+    if x[0]["flex"] >= abs(x[i]["flex"]):
+        y = abs(x[0]["flex"])
     else:
-        y = abs(x[i]["net"])
+        y = abs(x[i]["flex"])
 
-    # Iterate over the list x, divide by parent, round to 4 decimal places
-    for j in x:
-        if j["net"] > 0:
-            j["net"] = round((j["net"]/y), 4)
-        else:
-            j["net"] = -1 * round((j["net"]/y), 4)
-    
-    # Explanation:
-    # j["net"] will now be used as a flex value ranging from 0 to 1 for all j in x
+    # Iterate over the list x:
+
+    # Prep j['flex'] for our html as a flex value ranging from 0 to 1
     # so j's bar size on the page relative to the parent is the same as
-    # its gain/loss relative to the parent
+    # its relative gain/loss
 
-    # portfolio_name is the argument passed to the route
+    # j['contribution'] is used in the hover animation in css shown on the page
+    # and also 
+    # To get a purchase's contribution as a percentage:
+    # divide net profit for individual purchase over overall purchase price
+    for j in x:
+
+        j["contribution"] = round((j["contribution"]/purchase_overall)*100, 2)
+
+        if j["flex"] > 0:
+            j["flex"] = round((j["flex"]/y), 4)
+        else:
+            j["flex"] = -1 * round((j["flex"]/y), 4)
+
+    # portfolio_name is the argument passed to the route /portfolio/<portfolio_name>
     return render_template("portfolio.html", x=x, portfolio_name=portfolio_name, str=str, net_overall=net_overall, net_overallpercent=net_overallpercent)
 
 @app.route("/delete", methods=["GET", "POST"])
@@ -550,7 +558,7 @@ def add():
         else:
             return render_template("add.html", today=today, min_date=min_date, names=names)
 
-@app.route("/portfolio/<portfolio_name>/share/<unique_id>")
+@app.route("/portfolio/<portfolio_name>/share/<unique_id>", methods=["GET", "POST"])
 @login_required
 def share(portfolio_name, unique_id):
     
@@ -563,12 +571,13 @@ def share(portfolio_name, unique_id):
 
     # a is now ['AAPL', '20210811']
     symbol = a[0]
-    purchase_date = a[1]
 
-    # Convert to a datetime object for lookup()
-    date_input = datetime.strptime(purchase_date, "%Y%m%d")
+    # Create the datetime object lookup() needs
+    date_input = datetime.strptime(a[1], "%Y%m%d")
 
-    purchase_date = date_input.strftime("%Y-%m-%d")
+    # Create formatted string for the html
+    # All dates will be 8 digit strings
+    purchase_date = a[1][:4] + '-' + a[1][4:-2] + '-' + a[1][-2:]
 
     # Try fetch current price from session
     try:

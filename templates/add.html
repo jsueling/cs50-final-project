@@ -4,6 +4,7 @@
 {% block main %}
 <h1 class="display-4">Add Shares to a Portfolio</h1>
 <br>
+<br>
 <form id="form" action="/add" method="post">
     {% for row in names %}
         <input class="checkbox_radio" type="radio" id='{{ row[0] }}' name="portfolio_name" value='{{ row[0] }}'>

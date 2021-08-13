@@ -49,8 +49,8 @@ input:invalid {
     margin: auto;
 }
 
-p {
-    max-width: 50%;
+.pagetext {
+    max-width: 70%;
     margin: auto;
 }
 
@@ -80,7 +80,7 @@ h1 {
 }
 
 .alert {
-    width: 70%;
+    width: fit-content;
     margin: auto;
 }
 
@@ -90,4 +90,16 @@ h1 {
 
 .fa-caret-down {
     color: rgb(161, 37, 37);
+}
+
+.modal-body {
+    text-align: left;
+}
+
+#badgemodal {
+    font-size: large;
+}
+
+#HowtoModalLabel {
+    margin-left: 0;
 }

@@ -5,10 +5,11 @@
     {% if no_portfolios == True %}
         <div class="jumbotron">
             <h1 class="display-4">Welcome to MyPortfolios!</h1>
-            <p class="lead">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam egestas egestas orci eleifend tempor.</p>
+            <p class="pagetext lead">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam egestas egestas orci eleifend tempor.</p>
             <hr class="my-4">
-            <p>Curabitur mollis ac velit quis porta. Morbi quis purus eget quam efficitur aliquet. Etiam sit amet felis placerat, consequat neque sagittis, consequat tortor. Morbi sagittis, arcu at ullamcorper auctor, justo ante pretium elit, sed imperdiet neque diam non enim. Fusce dignissim pretium libero, at interdum odio fringilla nec. Cras ac turpis at purus porttitor fringilla vel vitae ex. Phasellus et augue id dui porttitor dictum sit amet vulputate felis. Etiam ex lectus, efficitur blandit sagittis non, condimentum sit amet dolor. Morbi tristique efficitur viverra.</p>
-            <p class="lead">
+            <p class="pagetext">Curabitur mollis ac velit quis porta. Morbi quis purus eget quam efficitur aliquet. Etiam sit amet felis placerat, consequat neque sagittis, consequat tortor. Morbi sagittis, arcu at ullamcorper auctor, justo ante pretium elit, sed imperdiet neque diam non enim. Fusce dignissim pretium libero, at interdum odio fringilla nec. Cras ac turpis at purus porttitor fringilla vel vitae ex. Phasellus et augue id dui porttitor dictum sit amet vulputate felis. Etiam ex lectus, efficitur blandit sagittis non, condimentum sit amet dolor. Morbi tristique efficitur viverra.</p>
+            <p class="pagetext lead">
+            <br>
                 <a class="btn btn-primary btn-lg" href="/create" role="button">Get Started!</a>
             </p>
         </div>
@@ -23,13 +24,18 @@
             </p>
         -->
     {% else %}
-        <h1 class="display-4">List of portfolios</h1>
+        <h1 class="display-4">List of Portfolios</h1>
         <br>
         <br>
         <!-- https://flask.palletsprojects.com/en/2.0.x/quickstart/#url-building -->
-        {% for row in portfolios %}
-            <h2><a href="/portfolio/{{ row[0] }}" class="portfolio btn btn-primary">{{ row[0] }}</a></h2>
-            <br>
-        {% endfor %}
+        <form action="/" method="post">
+            {% for row in portfolios %}
+                <button class="btn btn-outline-primary btn-lg" type="submit" name="portfolio_name" value="{{ row[0] }}">
+                    {{ row[0] }}
+                </button>
+                <br>
+                <br>
+            {% endfor %}
+        </form>
     {% endif %}
 {% endblock %}

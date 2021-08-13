@@ -4,4 +4,21 @@
 {% block main %}
 <h1 class="display-4">{{ symbol + ' ' + purchase_date }}</h1>
 <!-- Show what portfolio this is in somewhere using {{ portfolio_name }} -->
+
+<!--
+    Date purchased
+    Dollar value
+    % performance
+-->
+<br>
+<br>
+<br>
+<form action="/portfolio/{{ portfolio_name }}/share/{{ symbol + purchase_date }}" method="post">
+    <button class="btn btn-outline-primary" type="submit" name="delete" value="true">Delete</button>
+</form>
+<br>
+<br>
+<br>
+<a class="btn btn-primary" href="{{ url_for('portfolio', portfolio_name=portfolio_name) }}">Go back to {{ portfolio_name }}</a>
+
 {% endblock %}

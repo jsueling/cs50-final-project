@@ -54,20 +54,57 @@
         {% endif %}
     {% endfor %}
 </div>
+<br>
+<br>
+<br>
+<br>
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#HowtoModal">
+  How to Use
+</button>
 
+<!-- https://getbootstrap.com/docs/4.2/components/modal/ -->
+<div class="modal fade" id="HowtoModal" tabindex="-1" role="dialog" aria-labelledby="HowtoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h1 class="display-4 modal-title" id="HowtoModalLabel">How to use:</h1>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+          <div class="modal-body">
+            <br>
+            <p>
+              <span id="badgemodal" class="badge badge-secondary">Mouseover</span>&nbsp
+              the bar elements to show the contribution of each purchase
+              towards net profit as a percentage.
+            </p>
+            <br>
+            <br>
+            <p>
+              <span id="badgemodal" class="badge badge-secondary">Click</span>&nbsp
+              the bar elements for an in-depth breakdown of that purchase,
+              including date purchased, dollar value gained and performance against itself.
+            </p>
+            <br>
+            <br>
+            <p>
+                <span id="badgemodal" class="badge badge-secondary">Hint</span>&nbsp
+                Duplicates are shown if you bought a share at different prices.
+                This is done intentionally so you can compare performance between those purchases.
+            </p>
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+          </div>
+      </div>
+  </div>
+</div>
+<br>
+<br>
+<br>
+<br>
+<a class="btn btn-primary" href="/">Index</a>
 <script src=/static/portfolio.js></script>
-
-<!-- <p>
-    Click the element for a link to a breakdown
-    of that individual element including date purchased
-    and $ gained
-    Duplicates of shares are shown
-    because they were bought at different prices (dates)
-    So you can compare how you are performing
-    on that specific purchase (Combination of price and share)
-
-    Mouseover the bar elements to show the contribution of each purchase towards net profit
-
-    Click for an in-depth breakdown of that purchase, including date purcahsed, the performance against itself
-</p> -->
 {% endblock %}

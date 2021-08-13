@@ -74,41 +74,63 @@ load_dotenv("keys.env")
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    # For a user that has used the website (easiest test is to check for rows in SQL table)
-    # I want to return to them a list of their portfolios
-
+    
+    # store current user_id from session
     id = session["user_id"]
 
-    # https://www.psycopg.org/docs/usage.html
-    # Set paramaters of database connection from the config file
-    params = config()
-    # Open connection
-    conn = psycopg2.connect(**params)
-    # Open a cursor
-    cur = conn.cursor()
-    # Execute my query
-    cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) GROUP BY portfolio_name", 
-                (id,))
-    # Store the results
-    shares = cur.fetchall()
-    cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s)", (id,))
-    portfolios = cur.fetchall()
-    # close the cursor and the connection
-    cur.close()
-    conn.close()
+    if request.method=="POST":
 
-    no_portfolios = False
+        # Get value from the page for "portfolio_name"
+        portfolio_name = request.form.get("portfolio_name")
 
-    if not shares and not portfolios:
-        no_portfolios = True
-    
-    # The user has 1 porfolio, automatic redirect to that portfolio
-    if len(portfolios) == 1 and len(shares) > 0:
+        if not portfolio_name:
+            return error_page("Select a portfolio", 403)
+
+        # https://www.psycopg.org/docs/usage.html
+        # Set paramaters of database connection from the config file
+        params = config()
+        # Open connection
+        conn = psycopg2.connect(**params)
+        # Open a cursor
+        cur = conn.cursor()
+        # Execute my query
+        cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) AND \
+                    portfolio_name=(%s) GROUP BY portfolio_name;", (id, portfolio_name))
+        # Store the results
+        portfolios = cur.fetchall()
+        # close the cursor and the connection
+        cur.close()
+        conn.close()
+
+        # If the user clicked a portfolio that has no shares
+        if not portfolios:
+            flash("You need to add shares first to access this portfolio.", "primary")
+            return redirect("/add")
+        
+        # Else redirect to the portfolio they clicked on
         return redirect(f"/portfolio/{portfolios[0][0]}")
+
+    # request.method=="GET"
     else:
+
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s);", (id,))
+        portfolios = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        # Create boolean variable
+        no_portfolios = False
+
+        # No portfolios exist
+        if not portfolios:
+            no_portfolios = True
+
         return render_template("index.html", portfolios=portfolios, 
         no_portfolios=no_portfolios)
 
@@ -334,6 +356,8 @@ def portfolio(portfolio_name):
         # 'flex' is used to give the flex value of each element in the horizontal stacked bar chart
         # 'contribution' is the contribution of that purchase to the whole portfolio as a percentage.
         # It also separates a gain from a loss because flex cannot take negative values
+        
+        # Why the duplication here?
         if net_change < 0:
             z = [{'unique_id': unique_id, 'flex': net_change, 'contribution': net_change}]
         else:
@@ -624,8 +648,19 @@ def share(portfolio_name, unique_id):
                             buying {symbol} on {date_input}", 403)
     
     if request.method=="POST":
-        # TODO Delete this share
+
+        if request.form.get("delete") == True
+
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.execute("DELETE FROM shares WHERE id=(%s) AND symbol=(%s) AND purchase_price=(%s) AND purchase_date=(%s) AND portfolio_name=(%s);",
+         (id, symbol,rows[0][2], date_input, portfolio_name))
+        cur.close()
+        conn.close()
+
         return redirect("/")
     else:
         # TODO Decide what to return as information to the user
-        return render_template("share.html", symbol=symbol, purchase_date=purchase_date)
+        return render_template("share.html", symbol=symbol, purchase_date=purchase_date,
+                                 portfolio_name=portfolio_name)

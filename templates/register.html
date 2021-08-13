@@ -14,9 +14,14 @@
             <input class="form-control" name="password" placeholder="Password" type="password">
         </div>
         <div class="form-group">
-            <input class="form-control" name="confirmation" placeholder="Password" type="password">
+            <a href="#" data-toggle="tooltip" data-placement="right" title="Confirm password">
+                <input class="form-control" name="confirmation" placeholder="Password" type="password">
+            </a>
         </div>
         <br>
         <button class="btn btn-primary" type="submit">Log In</button>
     </form>
+
+<script src="/static/tooltip.js"></script>
+
 {% endblock %}

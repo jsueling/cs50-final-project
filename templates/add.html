@@ -13,7 +13,7 @@
     {% endfor %}
     <br>
     <!-- https://www.freecodecamp.org/news/how-to-use-html-to-open-link-in-new-tab/ -->
-    <p id="link">This application is limited to only support these symbols.
+    <p class="pagetext" id="link">This application is limited to only support these symbols.
         <br>
         <a href="https://iextrading.com/trading/eligible-symbols/" target="_blank" rel="noopener noreferrer">https://iextrading.com/trading/eligible-symbols/</a>
     </p>
@@ -30,14 +30,18 @@
     <div class="form-group nativeDatePicker">
         <!-- https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date -->
         <label for="purchase_date"><b>When did you purchase?</b></label><br>
+        <a href="#" data-toggle="tooltip" data-placement="left" title="For days where the exchanges are closed, we will take the price from the nearest trading day.">
         <input id="date1" autocomplete="off" class="form-control" name="purchase_date" min={{ min_date }} max={{ today }} type="date">
-        <br><br><br><p>For days where the exchange is closed, we will take the price from the nearest trading day.</p>
+        </a>
     </div>
     <div class="form-group fallbackDatePicker">
-        <label for="fallback_purchasedate">When did you purchase?</label><br>
+        <label for="fallback_purchasedate">When did you purchase?</label>
+        <br>
         <input autocomplete="off" class="form-control" name="fallback_purchasedate" placeholder="YYYY-MM-DD" type="text">
-        <br><br><br><p>For days where the exchange is closed, we will take the price from the nearest trading day.</p>
+        <br><br><br>
+        <p class="pagetext">For days where the exchanges are closed, we will take the price from the nearest trading day.</p>
     </div>
+    <br>
     <br>
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/button -->
     <!-- https://stackoverflow.com/a/21376901 -->
@@ -48,5 +52,6 @@
 </form>
 
 <script src="/static/add.js"></script>
+<script src="/static/tooltip.js"></script>
 
 {% endblock %}

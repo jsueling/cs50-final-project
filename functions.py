@@ -10,13 +10,9 @@ def error_page(message, code=400):
     """Returns a message on the error and what the user should do"""
     return render_template("error_page.html", code=code, message=message), code
 
-# My current application.py relies on calling lookup twice, my tables only store the date bought at
-# Could store purchase price in table to save 1 API call per visit
-# Same problem in /create, no data on days where exchanges are closed or current day
-# Need to rewrite lookup to accomodate lack of data on some days
-# e.g. lookup(today) > lookup(nearest weekday)
+
 def lookup(symbol, date_input):
-    """Look up quote for symbol."""
+    """Looks up a symbol on date given"""
 
     # Contact API
     try:
@@ -39,25 +35,54 @@ def lookup(symbol, date_input):
             "price": float(quote[0]["close"]),
             "symbol": quote[0]["symbol"],
         }
+    # Error check so we can return none to the user and display
+    # error page if something went wrong
     except (KeyError, TypeError, ValueError, IndexError):
         return None
 
 def scan(symbol, date_input):
-    """Scan nearest days for data"""
+    """Scans nearest days using lookup() for a purchase price"""
 
     # IEX doesn't store historical price info of the current day 
     # or weekends/holidays when exchanges are closed
 
     todays_date = date.today()
     purchase_date = date_input
-
-    # request for today which is Monday
+    
+    # 3 Edge cases
+    # User inputting he bought shares on:
+    
+    # Monday which is today
     if todays_date == purchase_date and purchase_date.weekday() == 0:
         # call lookup using the previous Friday
         scan_date = purchase_date - timedelta(days=3)
         data = lookup(symbol, scan_date)
+        if not data:
+            # Thursday
+            scan_date = pruchase_date - timedelta(days=1)
+            data = data = lookup(symbol, scan_date)
     
-    # Weekends, lookup the nearest weekday
+    # Saturday which is today
+    if todays_date == purchase_date and purchase_date.weekday() == 6:
+        # Friday
+        scan_date = purchase_date - timedelta(days=1)
+        data = lookup(symbol, scan_date)
+        if not data:
+            # Thursday
+            scan_date = pruchase_date - timedelta(days=2)
+            data = data = lookup(symbol, scan_date)
+    
+    # Sunday which is today
+    if todays_date == purchase_date and purchase_date.weekday() == 5:
+        # Friday
+        scan_date = purchase_date - timedelta(days=2)
+        data = lookup(symbol, scan_date)
+        if not data:
+            # Thursday
+            scan_date = pruchase_date - timedelta(days=3)
+            data = data = lookup(symbol, scan_date)
+
+    # For weekends, lookup the nearest weekday
 
     # Saturday
     elif purchase_date.weekday() == 5:
@@ -77,14 +102,17 @@ def scan(symbol, date_input):
     
     # Monday to Friday
     # There's a tradeoff between accomodating the user and number of API calls
-    # It's not efficient to have 3 API calls per failed lookup with alot of users
+    # It's not efficient to have lots of API calls with alot of users
     else:
+        # lookup using the date entered
         data = lookup(symbol, purchase_date)
         scan_date = purchase_date
         if not data:
+            # lookup 1 day before date input
             scan_date = purchase_date - timedelta(days=1)
             data = lookup(symbol, scan_date)
             if not data:
+                # lookup 1 day after date input
                 scan_date = purchase_date + timedelta(days=2)
                 data = lookup(symbol, scan_date)
     
@@ -94,6 +122,37 @@ def scan(symbol, date_input):
         "symbol": data["symbol"],
         "date": scan_date
     }
+
+# Since my application.py depends on calling scan
+# Things like /portfolio break when scan fails to get a current price
+# because the user can do nothing but delete his portfolio to stop the error
+# or wait until the next day
+# I found this problem trying to access a portfolio that tried to get current
+# price when today's date was a saturday and friday had no data
+# Instead of hard coding the days where this happens or extending
+# if statements to scan more days, we can create another function that
+# uses a separate API call
+
+# latestprice() finds the latest close price without needing a date
+
+def latestprice(symbol):
+    """Gets the latest/current price without needing a date input"""
+    
+    try:
+        api_key = os.environ.get("API_KEY")
+        response = requests.get(f"https://sandbox.iexapis.com/stable/stock/{urllib.parse.quote_plus(symbol)}/quote?token={api_key}")
+        response.raise_for_status()
+    except requests.RequestException:
+        return None
+    
+    try:
+        quote = response.json()
+        return {
+            "price": float(quote["latestPrice"]),
+            "symbol": quote["symbol"]
+        }
+    except (KeyError, TypeError, ValueError):
+        return None
 
 def login_required(f):
     """

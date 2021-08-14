@@ -6,7 +6,7 @@ from config import config
 from flask import Flask, flash, render_template, redirect, request, session
 from flask_session import Session
 from tempfile import mkdtemp
-from functions import error_page, login_required, lookup, usd, scan
+from functions import error_page, login_required, lookup, usd, scan, latestprice
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, date, time, timedelta
 from dotenv import load_dotenv
@@ -278,7 +278,6 @@ def create():
             return error_page('This portfolio name is taken, choose another portfolio name', 403)
         
         # All tests passed
-
         cur.execute("INSERT INTO portfolios (id, portfolio_name) VALUES (%s, %s);", (id, lower_pfname))
         conn.commit()
         cur.close()
@@ -341,8 +340,16 @@ def portfolio(portfolio_name):
             current_price = session[unique_id + '_current']
         
         except KeyError:
-            current_price = float(scan(row[0], today)["price"])
-            # Store current price for repeat use
+            # We are looking up symbols that exist in the database and have been validated before
+            data = latestprice(row[0])
+            # just to be sure
+            if not data:
+                return error_page(f"Symbol: {row[0]} has no latest price data", 403)
+            
+            # Get the latest price cast as float
+            current_price = float(data["price"])
+
+            # store in session
             session[unique_id + '_current'] = current_price
 
         purchase_price = float(row[2])
@@ -607,29 +614,19 @@ def share(portfolio_name, unique_id):
 
     # a is now ['AAPL', '20210811']
     symbol = a[0]
+    date = a[1]
 
-    # Create the datetime object lookup() needs
-    date_input = datetime.strptime(a[1], "%Y%m%d")
+    try:
+        # Create the datetime object lookup() needs
+        date_input = datetime.strptime(a[1], "%Y%m%d")
+    
+    except ValueError:
+        return error_page("Date format should be YYYYMMDD", 403)
 
     # Create formatted string for the html
     # All dates will be 8 digit strings
     purchase_date = a[1][:4] + '-' + a[1][4:-2] + '-' + a[1][-2:]
 
-    # Try fetch current price from session
-    try:
-        current_price = session[unique_id + '_current']
-
-    # Doesn't exist in session
-    except KeyError:
-        data = scan(row[0], today)
-
-        if not data:
-            return error_page("No data found on the date entered for this symbol. \
-                                Please refer to the link for supported symbols and check the date", 403)
-        
-        current_price = float(data["price"])
-        session[unique_id + '_current'] = current_price
-    
     params = config()
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
@@ -638,7 +635,6 @@ def share(portfolio_name, unique_id):
                 WHERE id=(%s) AND symbol=(%s) AND purchase_date=(%s) AND portfolio_name=(%s) \
                 GROUP BY symbol, purchase_price, purchase_date;", \
                 (id, symbol, date_input, portfolio_name))
-
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -649,18 +645,44 @@ def share(portfolio_name, unique_id):
     
     if request.method=="POST":
 
-        if request.form.get("delete") == True
+        delete = request.form.get("delete")
 
-        params = config()
-        conn = psycopg2.connect(**params)
-        cur = conn.cursor()
-        cur.execute("DELETE FROM shares WHERE id=(%s) AND symbol=(%s) AND purchase_price=(%s) AND purchase_date=(%s) AND portfolio_name=(%s);",
-         (id, symbol,rows[0][2], date_input, portfolio_name))
-        cur.close()
-        conn.close()
+        if delete == "True":
+            
+            params = config()
+            conn = psycopg2.connect(**params)
+            cur = conn.cursor()
+            cur.execute("DELETE FROM shares WHERE id=(%s) AND symbol=(%s) AND \
+                        purchase_price=(%s) AND purchase_date=(%s) AND portfolio_name=(%s);",
+                        (id, symbol, rows[0][2], date_input, portfolio_name))
+            conn.commit()
+            cur.close()
+            conn.close()
+            
+            flash(f"Deleted all {symbol} shares bought on \U0001F4C5 {purchase_date} from {portfolio_name}!", "success")
+            return redirect("/")
 
-        return redirect("/")
+    # GET    
     else:
+
+            # Try fetch current price from session
+            try:
+                current_price = session[unique_id + '_current']
+
+            # Doesn't exist in session
+            except KeyError:
+                # Get current price using latestprice()
+                data = latestprice(symbol)
+
+                if not data:
+                    return error_page(f"Symbol: {symbol} has no latest price data", 403)
+                
+                current_price = float(data["price"])
+
+                # store current price in session
+                session[unique_id + '_current'] = current_price
+
         # TODO Decide what to return as information to the user
+
         return render_template("share.html", symbol=symbol, purchase_date=purchase_date,
-                                 portfolio_name=portfolio_name)
+                                 portfolio_name=portfolio_name, date=date)

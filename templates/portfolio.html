@@ -28,7 +28,6 @@
     </div>
 {% endif %}
 <br>
-<br>
 <div id="full_bar">
     <!--
         Problems deciding how the divs are scaled
@@ -48,14 +47,23 @@
     -->
     {% for i in x %}
         {% if i["contribution"] > 0 %}
-            <div class="bar gain_element" data-link="{{ url_for('share', unique_id=i['unique_id'], portfolio_name=portfolio_name) }}" data-id="{{ (i['unique_id'])[:-8] + ' +' + str(i['contribution']) + '%' }}" style='flex: {{ i["flex"] }};'></div>
+            <div class="bar gain_element" data-link="{{ url_for('share', unique_id=i['unique_id'], portfolio_name=portfolio_name) }}"
+             data-id="{{ (i['unique_id'])[:-8] + ' +' + str(i['contribution']) + '%' }}" style='flex: {{ i["flex"] }};'></div>
         {% else %}
-            <div class="bar loss_element" data-link="{{ url_for('share', unique_id=i['unique_id'], portfolio_name=portfolio_name) }}" data-id="{{ (i['unique_id'])[:-8] + ' ' + str(i['contribution']) + '%' }}" style='flex: {{ i["flex"] }};'></div>
+            <div class="bar loss_element" data-link="{{ url_for('share', unique_id=i['unique_id'], portfolio_name=portfolio_name) }}"
+             data-id="{{ (i['unique_id'])[:-8] + ' ' + str(i['contribution']) + '%' }}" style='flex: {{ i["flex"] }};'></div>
         {% endif %}
     {% endfor %}
 </div>
 <br>
 <br>
+<h3>Portfolio value at today's prices:</h3>
+<br>
+<h2>{{ current_overall | usd }}</h2>
+<br>
+<h3>Portfolio value at time of purchase:</h3>
+<br>
+<h2>{{ purchase_overall | usd }}</h2>
 <br>
 <br>
 <!-- Button trigger modal -->
@@ -81,19 +89,18 @@
               towards net profit as a percentage.
             </p>
             <br>
-            <br>
             <p>
               <span id="badgemodal" class="badge badge-secondary">Click</span>&nbsp
               the bar elements for an in-depth breakdown of that purchase,
               including date purchased, dollar value gained and performance against itself.
             </p>
             <br>
-            <br>
             <p>
                 <span id="badgemodal" class="badge badge-secondary">Hint</span>&nbsp
                 Duplicates are shown if you bought a share at different prices.
                 This is done intentionally so you can compare performance between those purchases.
             </p>
+            <br>
           </div>
           <div class="modal-footer">
               <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
@@ -103,8 +110,8 @@
 </div>
 <br>
 <br>
-<br>
-<br>
 <a class="btn btn-primary" href="/">Index</a>
+
 <script src=/static/portfolio.js></script>
+
 {% endblock %}

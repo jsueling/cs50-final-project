@@ -77,7 +77,10 @@ if not os.environ.get("API_KEY"):
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    
+    """
+    Homepage that shows a welcome message if the user has no portfolios
+    or a list of links for all portfolios they have created
+    """
     # store current user_id from session
     id = session["user_id"]
 
@@ -246,6 +249,7 @@ def login():
 @app.route("/logout")
 @login_required
 def logout():
+    """Log user out"""
     # User must be logged in to logout
     session.clear()
     flash("Logged out successfully!", "success")
@@ -254,7 +258,7 @@ def logout():
 @app.route("/create", methods=["GET", "POST"])
 @login_required
 def create():
-    
+    """User can create a new portfolio"""
     if request.method =="POST":
 
         id = session["user_id"]
@@ -271,14 +275,15 @@ def create():
         # We don't want a user to have portfolios with the same name
         # Even if portfolio_name is already UNIQUE in the portfolios table
         cur.execute("SELECT portfolio_name FROM portfolios WHERE portfolio_name=(%s)",
-                     (lower_pfname,))
+                    (lower_pfname,))
         rows = cur.fetchall()
 
         if len(rows) == 1:
             return error_page('This portfolio name is taken, choose another portfolio name', 403)
         
         # All tests passed
-        cur.execute("INSERT INTO portfolios (id, portfolio_name) VALUES (%s, %s);", (id, lower_pfname))
+        cur.execute("INSERT INTO portfolios (id, portfolio_name) VALUES (%s, %s);",
+                    (id, lower_pfname))
         conn.commit()
         cur.close()
         conn.close()
@@ -294,7 +299,14 @@ def create():
 @app.route("/portfolio/<portfolio_name>")
 @login_required
 def portfolio(portfolio_name):
-    
+    """
+    Displays the current portfolio with a stacked horizontal bar chart,
+    the overall $ and percentage change of the portfolio aggregating all purchases.
+    The bar is dynamically generated to show relative performance
+    between constituents. The user can click and mouseover these elements
+    to see more details.
+    """
+
     id = session["user_id"]
     today = date.today()
     
@@ -413,11 +425,13 @@ def portfolio(portfolio_name):
 
     # portfolio_name is the argument passed to the route /portfolio/<portfolio_name>
     return render_template("portfolio.html", x=x, portfolio_name=portfolio_name, str=str,
-                             net_overall=net_overall, net_overallpercent=net_overallpercent)
+                            net_overall=net_overall, net_overallpercent=net_overallpercent,
+                            current_overall=current_overall, purchase_overall=purchase_overall)
 
 @app.route("/delete", methods=["GET", "POST"])
 @login_required
 def delete():
+    """User can delete from 1 to all of their portfolios"""
 
     id = session["user_id"]
 
@@ -449,8 +463,11 @@ def delete():
         # For each selected portfolio, delete the corresponding rows in portfolio
         # This delete query will cascade to the shares table deleting any row there with this portfolio_name
         for portfolio in portfolios:
-            cur.execute("DELETE FROM portfolios WHERE id = (%s) AND portfolio_name = (%s)", (id, portfolio))
+            cur.execute("DELETE FROM portfolios WHERE id = (%s) AND portfolio_name = (%s)",
+                        (id, portfolio))
+            
             flash(f"{portfolio} was successfully deleted!", "success")
+        
         conn.commit()
         cur.close()
         conn.close()
@@ -462,6 +479,7 @@ def delete():
 @app.route("/add", methods=["GET", "POST"])
 @login_required
 def add():
+    """Add shares to a portfolio"""
     
     # https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
     # Important: Client-side form validation is no substitute for validating on the server.
@@ -553,7 +571,7 @@ def add():
 
         if not data:
             return error_page("No data found on the date entered for this symbol. \
-                                Please refer to the link for supported symbols and check the date", 403)
+                            Please refer to the link for supported symbols and check the date", 403)
 
         # data not empty
 
@@ -574,7 +592,8 @@ def add():
         cur.close()
         conn.close()
 
-        flash(f"{purchase_quantity} shares of {upper_symbol} bought on \U0001F4C5 {scan_date} - saved to {portfolio_name}!", "success")
+        flash(f"{purchase_quantity} shares of {upper_symbol} bought on \U0001F4C5 {scan_date} \
+        - saved to {portfolio_name}!", "success")
 
         # https://stackoverflow.com/questions/8552675/form-sending-error-flask
         # The buttons do the same thing except redirect to different pages
@@ -604,7 +623,14 @@ def add():
 @app.route("/portfolio/<portfolio_name>/share/<unique_id>", methods=["GET", "POST"])
 @login_required
 def share(portfolio_name, unique_id):
-    
+    """
+    Once a bar element is clicked in /portfolio/<portfolio_name>,
+    the user is redirected here for:
+    Date of purchase of the element
+    Performance against itself in $ and % value
+    Ability to delete the element
+    """
+
     # https://stackoverflow.com/a/41369873
 
     id = session["user_id"]
@@ -627,6 +653,7 @@ def share(portfolio_name, unique_id):
     # All dates will be 8 digit strings
     purchase_date = a[1][:4] + '-' + a[1][4:-2] + '-' + a[1][-2:]
 
+    # Both Get and post need access to this query
     params = config()
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
@@ -659,30 +686,38 @@ def share(portfolio_name, unique_id):
             cur.close()
             conn.close()
             
-            flash(f"Deleted all {symbol} shares bought on \U0001F4C5 {purchase_date} from {portfolio_name}!", "success")
+            flash(f"Deleted all {symbol} shares bought on \U0001F4C5 {purchase_date} from \
+            {portfolio_name}!", "success")
             return redirect("/")
 
     # GET    
     else:
+        
+        # Try fetch current price from session
+        try:
+            current_price = session[unique_id + '_current']
 
-            # Try fetch current price from session
-            try:
-                current_price = session[unique_id + '_current']
+        # Doesn't exist in session
+        except KeyError:
+            # Get current price using latestprice()
+            data = latestprice(symbol)
 
-            # Doesn't exist in session
-            except KeyError:
-                # Get current price using latestprice()
-                data = latestprice(symbol)
+            if not data:
+                return error_page(f"Symbol: {symbol} has no latest price data", 403)
+            
+            current_price = float(data["price"])
 
-                if not data:
-                    return error_page(f"Symbol: {symbol} has no latest price data", 403)
-                
-                current_price = float(data["price"])
+            # store current price in session
+            session[unique_id + '_current'] = current_price
 
-                # store current price in session
-                session[unique_id + '_current'] = current_price
+        # Cast as a float to subtract from current_price next line
+        purchase_price = float(rows[0][2])
 
-        # TODO Decide what to return as information to the user
+        # Difference in current and purchase price * SUM(purchase_quantity)
+        dollar_change = (current_price - purchase_price) * rows[0][1]
 
-        return render_template("share.html", symbol=symbol, purchase_date=purchase_date,
-                                 portfolio_name=portfolio_name, date=date)
+        # Dollar change as a percentage of purchase price * SUM(purchase_quantity)
+        percent_change = round(dollar_change / (purchase_price * rows[0][1]) * 100, 2)
+
+        return render_template("share.html", symbol=symbol, purchase_date=purchase_date, 
+        portfolio_name=portfolio_name, date=date, dollar_change=dollar_change, percent_change=percent_change)

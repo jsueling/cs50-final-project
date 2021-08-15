@@ -123,20 +123,18 @@ def scan(symbol, date_input):
         "date": scan_date
     }
 
-# Since my application.py depends on calling scan
-# Things like /portfolio break when scan fails to get a current price
-# because the user can do nothing but delete his portfolio to stop the error
+# Since my application.py depended on calling scan
+# Things like /portfolio broke when scan failed to get a current price
+# because the user could do nothing but delete his portfolio to stop the error
 # or wait until the next day
 # I found this problem trying to access a portfolio that tried to get current
-# price when today's date was a saturday and friday had no data
+# price when today's date was a saturday and friday had no data.
 # Instead of hard coding the days where this happens or extending
 # if statements to scan more days, we can create another function that
-# uses a separate API call
-
-# latestprice() finds the latest close price without needing a date
+# uses an API call that returns the latest price
 
 def latestprice(symbol):
-    """Gets the latest/current price without needing a date input"""
+    """Gets the latest close price without needing a date input"""
     
     try:
         api_key = os.environ.get("API_KEY")

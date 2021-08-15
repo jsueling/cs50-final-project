@@ -4,21 +4,49 @@
 {% block main %}
 <h1 class="display-4">{{ symbol + ' ' + purchase_date }}</h1>
 <!-- Show what portfolio this is in somewhere using {{ portfolio_name }} -->
+<br>
+<br>
+<br>
+{% if dollar_change < 0 %}
+    <div>
+        <span class="inner fa fa-caret-down fa-2x"></span>
+        &nbsp&nbsp<h2 class=" inner loss_title">{{ dollar_change | usd }}</h2>
+    </div>
+    <br>
+    <div>
+        <span class="inner fa fa-caret-down fa-2x"></span>
+        &nbsp&nbsp&nbsp<h2 class="inner loss_title">{{ percent_change }}%</h2>
+    </div>
+    <div>
+        <!-- TODO -->
+    </div>
+{% else %}
+    <div>
+        <span class="inner fa fa-caret-up fa-2x"></span>
+        &nbsp&nbsp<h2 class=" inner gain_title">{{ dollar_change | usd }}</h2>
+    </div>
+    <br>
+    <div>
+        <span class="inner fa fa-caret-up fa-2x"></span>
+        &nbsp&nbsp&nbsp<h2 class="inner gain_title">{{ percent_change }}%</h2>
+    </div>
+    <div>
+        <!-- TODO -->
+    </div>
 
-<!--
-    Date purchased
-    Dollar value
-    % performance
--->
+{% endif %}
+
 <br>
 <br>
 <br>
 <form action="/portfolio/{{ portfolio_name }}/share/{{ symbol + date }}" method="post">
-    <button class="btn btn-outline-primary" type="submit" name="delete" value="True">Delete</button>
+    <button id="deletebutton" class="btn btn-outline-primary" type="submit" name="delete" value="True">Delete</button>
 </form>
 <br>
 <br>
 <br>
-<a class="btn btn-primary" href="{{ url_for('portfolio', portfolio_name=portfolio_name) }}">Go back to {{ portfolio_name }}</a>
+<a class="btn btn-primary" href="{{ url_for('portfolio', portfolio_name=portfolio_name) }}">Back to {{ portfolio_name }}</a>
+
+<script src="/static/confirm.js"></script>
 
 {% endblock %}

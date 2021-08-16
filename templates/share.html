@@ -5,45 +5,40 @@
 <h1 class="display-4">{{ symbol + ' ' + purchase_date }}</h1>
 <!-- Show what portfolio this is in somewhere using {{ portfolio_name }} -->
 <br>
-<br>
+<h5>Net profit of individual share purchase:</h5>
 <br>
 {% if dollar_change < 0 %}
     <div>
         <span class="inner fa fa-caret-down fa-2x"></span>
-        &nbsp&nbsp<h2 class=" inner loss_title">{{ dollar_change | usd }}</h2>
+        &nbsp&nbsp<h4 class=" inner loss_title">{{ dollar_change | usd }}</h4>
     </div>
     <br>
     <div>
         <span class="inner fa fa-caret-down fa-2x"></span>
-        &nbsp&nbsp&nbsp<h2 class="inner loss_title">{{ percent_change }}%</h2>
-    </div>
-    <div>
-        <!-- TODO -->
+        &nbsp&nbsp&nbsp<h4 class="inner loss_title">{{ percent_change }}%</h4>
     </div>
 {% else %}
     <div>
         <span class="inner fa fa-caret-up fa-2x"></span>
-        &nbsp&nbsp<h2 class=" inner gain_title">{{ dollar_change | usd }}</h2>
+        &nbsp&nbsp<h4 class=" inner gain_title">{{ dollar_change | usd }}</h4>
     </div>
     <br>
     <div>
         <span class="inner fa fa-caret-up fa-2x"></span>
-        &nbsp&nbsp&nbsp<h2 class="inner gain_title">{{ percent_change }}%</h2>
+        &nbsp&nbsp&nbsp<h4 class="inner gain_title">{{ percent_change }}%</h4>
     </div>
-    <div>
-        <!-- TODO -->
-    </div>
-
 {% endif %}
-
 <br>
-<br>
+<h5>Quantity of shares purchased:</h5>
+<p class="share-text">{{ quantity }}</p>
+<h5>Current price:</h5>
+<p class="share-text">{{ current_price | usd }}</p>
+<h5>Purchase price:</h5>
+<p class="share-text">{{ purchase_price | usd }}</p>
 <br>
 <form action="/portfolio/{{ portfolio_name }}/share/{{ symbol + date }}" method="post">
-    <button id="deletebutton" class="btn btn-outline-primary" type="submit" name="delete" value="True">Delete</button>
+    <button id="deletebutton" class="btn btn-outline-primary" type="submit" name="delete" value="True">Delete this purchase</button>
 </form>
-<br>
-<br>
 <br>
 <a class="btn btn-primary" href="{{ url_for('portfolio', portfolio_name=portfolio_name) }}">Back to {{ portfolio_name }}</a>
 

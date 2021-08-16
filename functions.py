@@ -116,12 +116,17 @@ def scan(symbol, date_input):
                 scan_date = purchase_date + timedelta(days=2)
                 data = lookup(symbol, scan_date)
     
-    # Return a json object with the new date used
-    return {
-        "price": data["price"],
-        "symbol": data["symbol"],
-        "date": scan_date
-    }
+
+    try:
+        return {
+            "price": data["price"],
+            "symbol": data["symbol"],
+            "date": scan_date
+        }
+    # Error check so we can return none to the user and display
+    # error page if something went wrong
+    except (KeyError, TypeError, ValueError, IndexError):
+        return None
 
 # Since my application.py depended on calling scan
 # Things like /portfolio broke when scan failed to get a current price

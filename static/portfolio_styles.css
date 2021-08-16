@@ -2,10 +2,11 @@
     /* https://css-tricks.com/snippets/css/a-guide-to-flexbox/ */
     display: flex;
     height: 60px;
-    width: 50%;
+    width: 90%;
     margin: auto;
     justify-content: center;
     align-items: flex-end;
+    max-width: 600px;
 }
 
 .gain_element {
@@ -26,7 +27,7 @@
 
 /* we need to override the inline styles with an !important */
 .bar:hover{
-    flex: 2 !important;
+    flex: 1.1 !important;
 }
 
 /* https://www.w3schools.com/css/css_image_transparency.asp */

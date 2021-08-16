@@ -110,7 +110,7 @@ def index():
 
         # If the user clicked a portfolio that has no shares
         if not portfolios:
-            flash("You need to add shares first to access this portfolio.", "primary")
+            flash("You need to add shares to this portfolio first.", "primary")
             return redirect("/add")
         
         # Else redirect to the portfolio they clicked on
@@ -318,12 +318,20 @@ def portfolio(portfolio_name):
                  FROM shares WHERE id=(%s) AND portfolio_name=(%s) \
                  GROUP BY symbol, purchase_price, purchase_date;",
                  (id, portfolio_name))
-    portfolio = cur.fetchall()
+    shares = cur.fetchall()
+
+    cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s)", (id,))
+    names = cur.fetchall()
+
     cur.close()
     conn.close()
 
-    if not portfolio:
-        return error_page("You have no portfolio with this name", 403)
+    if not names:
+        flash("No portfolios detected - you have been redirected here automatically.", "primary")
+        return redirect("/create")
+    if not shares:
+        flash(f"No shares detected in {portfolio_name} - you have been redirected here automatically.", "primary")
+        return redirect("/add")
 
     # https://blog.scottlogic.com/2020/10/09/charts-with-flexbox.html
 
@@ -333,7 +341,7 @@ def portfolio(portfolio_name):
     purchase_overall = 0
     current_overall = 0
 
-    for row in portfolio:
+    for row in shares:
 
         date_nospace = row[3].strftime("%Y%m%d")
         # E.g. AAPL20210808
@@ -571,8 +579,9 @@ def add():
 
         if not data:
             return error_page("No data found on the date entered for this symbol. \
-                            Please refer to the link for supported symbols and check the date", 403)
-
+                            Please refer to the link for supported symbols and check the date. \
+                            You may be trying to access a date before the company was listed", 403)
+        
         # data not empty
 
         # We want the scan date used for our database that matches this price
@@ -593,7 +602,7 @@ def add():
         conn.close()
 
         flash(f"{purchase_quantity} shares of {upper_symbol} bought on \U0001F4C5 {scan_date} \
-        - saved to {portfolio_name}!", "success")
+        , saved to {portfolio_name}!", "success")
 
         # https://stackoverflow.com/questions/8552675/form-sending-error-flask
         # The buttons do the same thing except redirect to different pages
@@ -688,7 +697,7 @@ def share(portfolio_name, unique_id):
             
             flash(f"Deleted all {symbol} shares bought on \U0001F4C5 {purchase_date} from \
             {portfolio_name}!", "success")
-            return redirect("/")
+            return redirect(f"/portfolio/{portfolio_name}")
 
     # GET    
     else:
@@ -719,5 +728,13 @@ def share(portfolio_name, unique_id):
         # Dollar change as a percentage of purchase price * SUM(purchase_quantity)
         percent_change = round(dollar_change / (purchase_price * rows[0][1]) * 100, 2)
 
-        return render_template("share.html", symbol=symbol, purchase_date=purchase_date, 
-        portfolio_name=portfolio_name, date=date, dollar_change=dollar_change, percent_change=percent_change)
+        return render_template("share.html",
+                                symbol=symbol,
+                                purchase_date=purchase_date, 
+                                portfolio_name=portfolio_name,
+                                date=date,
+                                dollar_change=dollar_change,
+                                percent_change=percent_change,
+                                current_price=current_price,
+                                purchase_price=purchase_price,
+                                quantity=rows[0][1])

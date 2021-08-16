@@ -97,6 +97,7 @@ h1 {
 
 .modal-body {
     text-align: left;
+    font-size: 14px;
 }
 
 #badgemodal {
@@ -105,4 +106,22 @@ h1 {
 
 #HowtoModalLabel {
     margin-left: 0;
+}
+
+#cardtwo {
+    text-align: left;
+}
+
+#accordion {
+    width: 90%;
+    margin: auto;
+    max-width: 500px;
+}
+
+.share-text {
+    font-size: 20px;
+}
+
+p {
+    font-size: 14px;
 }

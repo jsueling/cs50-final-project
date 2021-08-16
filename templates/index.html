@@ -5,12 +5,21 @@
     {% if no_portfolios == True %}
         <div class="jumbotron">
             <h1 class="display-4">Welcome to MyPortfolios!</h1>
-            <p class="pagetext lead">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam egestas egestas orci eleifend tempor.</p>
+            <br>
+            <p class="pagetext lead">
+                A simple web app for visualising portfolio progress
+            </p>
             <hr class="my-4">
-            <p class="pagetext">Curabitur mollis ac velit quis porta. Morbi quis purus eget quam efficitur aliquet. Etiam sit amet felis placerat, consequat neque sagittis, consequat tortor. Morbi sagittis, arcu at ullamcorper auctor, justo ante pretium elit, sed imperdiet neque diam non enim. Fusce dignissim pretium libero, at interdum odio fringilla nec. Cras ac turpis at purus porttitor fringilla vel vitae ex. Phasellus et augue id dui porttitor dictum sit amet vulputate felis. Etiam ex lectus, efficitur blandit sagittis non, condimentum sit amet dolor. Morbi tristique efficitur viverra.</p>
+            <p class="pagetext">
+                The main purpose of the app is to help the user to better visualise their portfolio performance 
+                with a focus on relative performance between share purchases. This should help the user to make better decisions
+                for their portfolio in future. The user can also explore by testing hypothetical portfolios.
+                The app uses the IEX cloud API to fetch current and historical prices of shares. It uses
+               those prices to display portfolio performance dynamically to the user.
+            </p>
             <p class="pagetext lead">
             <br>
-                <a class="btn btn-primary btn-lg" href="/create" role="button">Get Started!</a>
+                <a class="btn btn-dark btn-lg" href="/create" role="button">Get Started!</a>
             </p>
         </div>
         <!-- 
@@ -30,7 +39,7 @@
         <!-- https://flask.palletsprojects.com/en/2.0.x/quickstart/#url-building -->
         <form action="/" method="post">
             {% for row in portfolios %}
-                <button class="btn btn-outline-primary btn-lg" type="submit" name="portfolio_name" value="{{ row[0] }}">
+                <button class="btn btn-outline-dark btn-lg" type="submit" name="portfolio_name" value="{{ row[0] }}">
                     {{ row[0] }}
                 </button>
                 <br>

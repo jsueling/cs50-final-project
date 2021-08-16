@@ -516,21 +516,24 @@ def add():
             return error_page("Choose a portfolio to add shares to", 403)
         
         # Internet explorer doesn't support input="date", degrades to input="text"
-        try:
-            # Native case with input="date"
-            # https://stackoverflow.com/questions/10434599/get-the-data-received-in-a-flask-request
-            purchase_date = request.form["purchase_date"]
-        except KeyError:
-            # KeyError when an element with that name doesn't exist
-            # So by elimination fallback:
+        # Native case with input="date"
+        # https://stackoverflow.com/questions/10434599/get-the-data-received-in-a-flask-request
+        purchase_date = request.form["purchase_date"]
+
+        if not purchase_date:
+            # Fallback for Iex browsers
             purchase_date = request.form["fallback_purchasedate"]
 
         if not purchase_date:
             return error_page("Enter a date", 403)
         
-        # Convert string input to a date object so we can compare
-        parsed_datetime = datetime.strptime(purchase_date, "%Y-%m-%d")
-        parsed_date = parsed_datetime.date()
+        try:
+            # Convert string input to a date object so we can compare
+            parsed_datetime = datetime.strptime(purchase_date, "%Y-%m-%d")
+            parsed_date = parsed_datetime.date()
+        # Error check mainly for Iex browsers when having to type a date
+        except ValueError:
+           return error_page("Date input must be valid and YYYY-MM-DD format")
 
         # Prevent the user from entering a date out of these bounds, today and 5 years ago
         if parsed_date < min_date:

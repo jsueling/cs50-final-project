@@ -55,36 +55,75 @@
         {% endif %}
     {% endfor %}
 </div>
+<br><br>
 <br>
-<br>
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-outline-dark" data-toggle="modal" data-target="#HowtoModal">
+  How to Use
+</button>
+<!-- https://getbootstrap.com/docs/4.2/components/modal/ -->
+<div class="modal fade" id="HowtoModal" tabindex="-1" role="dialog" aria-labelledby="HowtoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h1 class="display-4 modal-title" id="HowtoModalLabel">How to use:</h1>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+          <div class="modal-body">
+            <br>
+            <p>
+              <span id="badgemodal" class="badge badge-dark">Mouseover</span>
+              the bar elements to show the contribution of each purchase
+              towards net profit as a percentage.
+            </p>
+            <br>
+            <p>
+              <span id="badgemodal" class="badge badge-dark">Click</span>
+              the bar elements for an in-depth breakdown of that purchase,
+              including date purchased, dollar value gained and performance against itself.
+            </p>
+            <br>
+            <p>
+                <span id="badgemodal" class="badge badge-dark">Hint</span>
+                Duplicates are shown if you bought a share at different prices.
+                This is done intentionally so you can compare performance between those purchases.
+            </p>
+            <br>
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+          </div>
+      </div>
+  </div>
+</div>
+<br><br>
+<br><br>
 <!-- https://getbootstrap.com/docs/4.0/components/collapse/ -->
 <div id="accordion">
     <div class="card">
         <div class="card-header">
-            <h5 class="mb-0">
-                <button class="btn btn-link" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                    Breakdown
-                </button>
-            </h5>
+            <button id="cardbutton" class="btn btn-link" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                <p class="cardheadertext my-0">Breakdown</p>
+            </button>
         </div>
         <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
             <div class="card-body">
-                <br>
-                <p><b>Total portfolio value at today's prices:</b></p>
-                <p>{{ current_overall | usd }}</p>
-                <p><b>Total portfolio value at time of purchase(s):</b></p>
-                <p>{{ purchase_overall | usd }}</p>
-                <br>
+                <p class="breakdowntext">
+                <b>Total portfolio value at today's prices:</b>
+                <br>{{ current_overall | usd }}
+                <br><b>Total portfolio value at time of purchase(s):</b>
+                <br>{{ purchase_overall | usd }}
+                </p>
             </div>
         </div>
     </div>
     <div class="card">
         <div class="card-header">
-            <h5 class="mb-0">
-                <button class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
-                    Contribution to Net Profit Example
-                </button>
-            </h5>
+            <button id="cardbutton" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
+                <p class="cardheadertext my-0">Contribution to Net Profit Example</p>
+            </button>
         </div>
         <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
             <div class="card-body">
@@ -110,51 +149,8 @@
     </div>
 </div>
 <br>
-<!-- Button trigger modal -->
-<button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#HowtoModal">
-  How to Use
-</button>
-
-<!-- https://getbootstrap.com/docs/4.2/components/modal/ -->
-<div class="modal fade" id="HowtoModal" tabindex="-1" role="dialog" aria-labelledby="HowtoModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-          <div class="modal-header">
-              <h1 class="display-4 modal-title" id="HowtoModalLabel">How to use:</h1>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-              </button>
-          </div>
-          <div class="modal-body">
-            <br>
-            <p>
-              <span id="badgemodal" class="badge badge-secondary">Mouseover</span>
-              the bar elements to show the contribution of each purchase
-              towards net profit as a percentage.
-            </p>
-            <br>
-            <p>
-              <span id="badgemodal" class="badge badge-secondary">Click</span>
-              the bar elements for an in-depth breakdown of that purchase,
-              including date purchased, dollar value gained and performance against itself.
-            </p>
-            <br>
-            <p>
-                <span id="badgemodal" class="badge badge-secondary">Hint</span>
-                Duplicates are shown if you bought a share at different prices.
-                This is done intentionally so you can compare performance between those purchases.
-            </p>
-            <br>
-          </div>
-          <div class="modal-footer">
-              <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-          </div>
-      </div>
-  </div>
-</div>
 <br>
-<br>
-<a class="btn btn-primary" href="/">Index</a>
+<a class="btn btn-dark" href="/">Index</a>
 
 <script src=/static/portfolio.js></script>
 

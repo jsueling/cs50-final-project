@@ -1,7 +1,9 @@
 import os
 import requests
+import psycopg2
 import urllib.parse
 
+from config import config
 from flask import redirect, session, render_template 
 from functools import wraps
 from datetime import time, timedelta, datetime, date
@@ -10,6 +12,42 @@ def error_page(message, code=400):
     """Returns a message on the error and what the user should do"""
     return render_template("error_page.html", code=code, message=message), code
 
+# https://www.postgresqltutorial.com/postgresql-python/connect/
+# https://www.psycopg.org/docs/usage.html
+# https://www.freecodecamp.org/news/connect-python-with-sql/
+
+def db_select(query, data):
+    """Connects to the database using config.py and executes a SELECT query"""
+    # Set paramaters of database connection from the config file
+    params = config()
+    # Open connection
+    conn = psycopg2.connect(**params)
+    # Open a cursor
+    cur = conn.cursor()
+    # Execute SELECT query
+    cur.execute(query, data)
+    # Store the results
+    results = cur.fetchall()
+    # Close the cursor and the connection
+    cur.close()
+    conn.close()
+    # Return the results of the query that was called with db_select()
+    return results
+
+def db_commit(query, data):
+    """
+    Connects to the database using config.py, executes a query
+    and commmits the changes
+    does not return any results 
+    """
+    params = config()
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+    cur.execute(query, data)
+    # commit changes made from the query (insert, update, delete)
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def lookup(symbol, date_input):
     """Looks up a symbol on date given"""
@@ -128,7 +166,7 @@ def scan(symbol, date_input):
     except (KeyError, TypeError, ValueError, IndexError):
         return None
 
-# Since my application.py depended on calling scan
+# Since my application depended on calling scan
 # Things like /portfolio broke when scan failed to get a current price
 # because the user could do nothing but delete his portfolio to stop the error
 # or wait until the next day

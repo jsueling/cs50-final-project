@@ -1,12 +1,10 @@
 import os
-import psycopg2
 import re
 
-from config import config
 from flask import Flask, flash, render_template, redirect, request, session
 from flask_session import Session
 from tempfile import mkdtemp
-from functions import error_page, login_required, lookup, usd, scan, latestprice
+from functions import error_page, login_required, lookup, usd, scan, latestprice, db_commit, db_select
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, date, time, timedelta
 from dotenv import load_dotenv
@@ -14,7 +12,7 @@ from dotenv import load_dotenv
 # Setup the flask app
 app = Flask(__name__)
 
-# https://stackoverflow.com/questions/9508667/reload-flask-app-when-template-file-changes
+# https://stackoverflow.com/a/54852798
 # Ensure templates are auto-reloaded in the app when they are changed
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
@@ -46,31 +44,10 @@ Session(app)
 # This filter is now registered for use in templates
 app.jinja_env.filters["usd"] = usd
 
-# https://www.postgresqltutorial.com/postgresql-python/connect/
-# https://www.psycopg.org/docs/usage.html
-
-# params = config()
-# conn = psycopg2.connect(**params)
-# cur = conn.cursor()
-# SQL query cur.execute()
-# cur.fetchall()
-# conn.commit() for update insert delete
-# cur.close()
-# conn.close()
-
-# Something to look at maybe
-# Heroku is storing an environment variable of API_KEY=...
-# Because the .env is not git committed and heroku is running the git committed vers
-# Running locally keys.env is read with flask run
-# Added a remote pointing to heroku to deploy to heroku with 'git push heroku master'
-# https://stackoverflow.com/questions/28323666/setting-environment-variables-in-heroku-for-flask-app
-# https://stackoverflow.com/questions/41546883/what-is-the-use-of-python-dotenv
-# https://www.twilio.com/blog/environment-variables-python
-# .flaskenv needs to be added somewhere, add to functions to stop the program from not running
-
 # https://flask.palletsprojects.com/en/2.0.x/cli/
 load_dotenv("keys.env")
 
+# Need the API_KEY for the application to function
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
 
@@ -91,51 +68,31 @@ def index():
 
         if not portfolio_name:
             return error_page("Select a portfolio", 403)
-
-        # https://www.psycopg.org/docs/usage.html
-        # Set paramaters of database connection from the config file
-        params = config()
-        # Open connection
-        conn = psycopg2.connect(**params)
-        # Open a cursor
-        cur = conn.cursor()
-        # Execute my query
-        cur.execute("SELECT portfolio_name FROM shares WHERE id=(%s) AND \
-                    portfolio_name=(%s) GROUP BY portfolio_name;", (id, portfolio_name))
-        # Store the results
-        portfolios = cur.fetchall()
-        # close the cursor and the connection
-        cur.close()
-        conn.close()
-
+        
+        portfolio = db_select("SELECT portfolio_name FROM shares WHERE id=(%s) AND \
+                            portfolio_name=(%s) GROUP BY portfolio_name;", (id, portfolio_name))
+        
         # If the user clicked a portfolio that has no shares
-        if not portfolios:
+        if not portfolio:
             flash("You need to add shares to this portfolio first.", "primary")
             return redirect("/add")
         
         # Else redirect to the portfolio they clicked on
-        return redirect(f"/portfolio/{portfolios[0][0]}")
+        return redirect(f"/portfolio/{portfolio[0][0]}")
 
     # request.method=="GET"
     else:
-
-        params = config()
-        conn = psycopg2.connect(**params)
-        cur = conn.cursor()
-        cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s);", (id,))
-        portfolios = cur.fetchall()
-        cur.close()
-        conn.close()
+        # Check for any portfolio existing in portfolios table
+        portfolios = db_select("SELECT portfolio_name FROM portfolios WHERE id=(%s);", (id,))
 
         # Create boolean variable
         no_portfolios = False
 
-        # No portfolios exist
         if not portfolios:
             no_portfolios = True
 
         return render_template("index.html", portfolios=portfolios, 
-        no_portfolios=no_portfolios)
+                                no_portfolios=no_portfolios)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -150,7 +107,7 @@ def register():
     if request.method == "POST":
         # User inputs
         username = request.form.get("username")
-        # Case insensitive username for a smoother user experience
+        # Case insensitive username for an easier user experience
         lower_username =  username.lower()
         password = request.form.get("password")
         confirmation = request.form.get("confirmation")
@@ -163,14 +120,8 @@ def register():
         if password != confirmation:
             return error_page("Passwords do not match (Case sensitive)")
 
-        # Connected
-        params = config()
-        conn = psycopg2.connect(**params)
-        cur =  conn.cursor()
-
-        # Check the username is unique in my table
-        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username,))
-        rows = cur.fetchall()
+        # Check the username is unique in the users table
+        rows = db_select("SELECT * FROM users WHERE username = (%s);", (lower_username,))
 
         if len(rows) == 1:
             return error_page("This username is taken, try another username")
@@ -178,20 +129,15 @@ def register():
         # Hash user input password
         hashed_password = generate_password_hash(password)
 
-        # Passed error checks, password hashed
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s);",
-                     (lower_username, hashed_password))
+        # Passed error checks, password hashed -> register the user
+        db_commit("INSERT INTO users (username, password) \
+                    VALUES (%s, %s);", (lower_username, hashed_password))
         
-        # repeat query to get the id from the newly created user
-        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username,))
-        rows = cur.fetchall()
+        # Get the id from the newly created user
+        rows = db_select("SELECT * FROM users WHERE username = (%s);", (lower_username,))
         
         # Storing user_id in session satisfies our login_required function
         session["user_id"] = rows[0][0]
-
-        conn.commit()
-        cur.close()
-        conn.close()
 
         flash(f"Registered and logged in as {username} successfully!", "success")
         # Instead of redirecting to login we can be efficient and redirect,
@@ -221,18 +167,12 @@ def login():
         if not password:
             return error_page("You must enter a password", 403)
 
-        params = config()
-        conn = psycopg2.connect(**params)
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE username = (%s);", (lower_username,))
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
+        rows = db_select("SELECT * FROM users WHERE username = (%s);", (lower_username,))
 
         # Database checks
         if len(rows) != 1:
             return error_page("An account with this username does not exist", 403)
-
+        
         if not check_password_hash(rows[0][2], password):
             return error_page("Incorrect password (Case sensitive)", 403)
         
@@ -269,28 +209,19 @@ def create():
 
         lower_pfname = portfolio_name.lower()
 
-        params = config()
-        conn = psycopg2.connect(**params)
-        cur = conn.cursor()
-        # We don't want a user to have portfolios with the same name
-        # Even if portfolio_name is already UNIQUE in the portfolios table
-        cur.execute("SELECT portfolio_name FROM portfolios WHERE portfolio_name=(%s)",
-                    (lower_pfname,))
-        rows = cur.fetchall()
-
+        rows = db_select("SELECT portfolio_name FROM portfolios WHERE \
+                            portfolio_name=(%s)", (lower_pfname,))
+        
+        # portfolio_name must be unique because it is referenced as a foreign key in shares
         if len(rows) == 1:
             return error_page('This portfolio name is taken, choose another portfolio name', 403)
         
-        # All tests passed
-        cur.execute("INSERT INTO portfolios (id, portfolio_name) VALUES (%s, %s);",
-                    (id, lower_pfname))
-        conn.commit()
-        cur.close()
-        conn.close()
+        # All tests passed, create the portfolio
+        db_commit("INSERT INTO portfolios (id, portfolio_name) VALUES (%s, %s);", (id, lower_pfname))
 
         flash(f"{lower_pfname} has been successfully created!", "success")
         
-        # User probably wants to add shares once a new portfolio is created
+        # User probably likely wants to add shares once a new portfolio is created
         return redirect("/add")
 
     else:
@@ -309,28 +240,23 @@ def portfolio(portfolio_name):
 
     id = session["user_id"]
     today = date.today()
-    
-    params = config()
-    conn = psycopg2.connect(**params)
-    cur = conn.cursor()
-    # TODO TEST THIS GROUPING WITH PRICE
-    cur.execute("SELECT symbol, SUM(purchase_quantity) AS sum_shares, purchase_price, purchase_date \
-                 FROM shares WHERE id=(%s) AND portfolio_name=(%s) \
-                 GROUP BY symbol, purchase_price, purchase_date;",
-                 (id, portfolio_name))
-    shares = cur.fetchall()
 
-    cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s)", (id,))
-    names = cur.fetchall()
+    shares = db_select(
+    """
+    SELECT symbol, SUM(purchase_quantity) AS sum_shares, purchase_price, purchase_date
+    FROM shares WHERE id=(%s) AND portfolio_name=(%s)
+    GROUP BY symbol, purchase_price, purchase_date;
+    """, 
+    (id, portfolio_name))
 
-    cur.close()
-    conn.close()
+    names = db_select("SELECT portfolio_name FROM portfolios WHERE id=(%s)", (id,))
 
     if not names:
         flash("No portfolios detected - you have been redirected here automatically.", "primary")
         return redirect("/create")
     if not shares:
-        flash(f"No shares detected in {portfolio_name} - you have been redirected here automatically.", "primary")
+        flash(f"No shares detected in {portfolio_name} - you have been redirected here \
+                automatically.", "primary")
         return redirect("/add")
 
     # https://blog.scottlogic.com/2020/10/09/charts-with-flexbox.html
@@ -443,13 +369,7 @@ def delete():
 
     id = session["user_id"]
 
-    params = config()
-    conn = psycopg2.connect(**params)
-    cur = conn.cursor()
-    cur.execute("SELECT portfolio_name FROM portfolios WHERE id = (%s)", (id,))
-    names = cur.fetchall()
-    cur.close()
-    conn.close()
+    names = db_select("SELECT portfolio_name FROM portfolios WHERE id = (%s)", (id,))
 
     # User restricted from this page if he has no portfolios to delete
     if not names:
@@ -464,21 +384,11 @@ def delete():
         if not portfolios:
             return error_page("Select the portfolios you want to delete", 403)
 
-        params = config()
-        conn = psycopg2.connect(**params)
-        cur = conn.cursor()
-
         # For each selected portfolio, delete the corresponding rows in portfolio
         # This delete query will cascade to the shares table deleting any row there with this portfolio_name
         for portfolio in portfolios:
-            cur.execute("DELETE FROM portfolios WHERE id = (%s) AND portfolio_name = (%s)",
-                        (id, portfolio))
-            
+            db_commit("DELETE FROM portfolios WHERE id = (%s) AND portfolio_name = (%s)", (id, portfolio))
             flash(f"{portfolio} was successfully deleted!", "success")
-        
-        conn.commit()
-        cur.close()
-        conn.close()
 
         return redirect("/")
     else:
@@ -593,19 +503,15 @@ def add():
         purchase_price = data["price"]
 
         # All validity checks passed
+        db_commit("""
+        INSERT INTO shares
+        (symbol, purchase_quantity, purchase_price, purchase_date, portfolio_name, id)
+        VALUES (%s, %s, %s, %s, %s, %s);
+        """,
+        (upper_symbol, purchase_quantity, purchase_price, scan_date, portfolio_name, id))
 
-        params = config()
-        conn = psycopg2.connect(**params)
-        cur = conn.cursor()
-        cur.execute("INSERT INTO shares (symbol, purchase_quantity, purchase_price, purchase_date, \
-                    portfolio_name, id) VALUES (%s, %s, %s, %s, %s, %s);",
-                    (upper_symbol, purchase_quantity, purchase_price, scan_date, portfolio_name, id))
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        flash(f"{purchase_quantity} shares of {upper_symbol} bought on \U0001F4C5 {scan_date} \
-        , saved to {portfolio_name}!", "success")
+        flash(f"{purchase_quantity} shares of {upper_symbol} bought on \U0001F4C5 {scan_date}, \
+                saved to {portfolio_name}!", "success")
 
         # https://stackoverflow.com/questions/8552675/form-sending-error-flask
         # The buttons do the same thing except redirect to different pages
@@ -616,14 +522,7 @@ def add():
 
     # request.method =="GET"
     else:
-
-        params = config()
-        conn = psycopg2.connect(**params)
-        cur = conn.cursor()
-        cur.execute("SELECT portfolio_name FROM portfolios WHERE id=(%s)", (id,))
-        names = cur.fetchall()
-        cur.close()
-        conn.close()
+        names = db_select("SELECT portfolio_name FROM portfolios WHERE id=(%s)", (id,))
 
         # User restricted from adding shares to portfolios if he has no portfolios
         if not names:
@@ -666,17 +565,14 @@ def share(portfolio_name, unique_id):
     purchase_date = a[1][:4] + '-' + a[1][4:-2] + '-' + a[1][-2:]
 
     # Both Get and post need access to this query
-    params = config()
-    conn = psycopg2.connect(**params)
-    cur = conn.cursor()
     # Potential error if different prices on the same day but should only be a problem using sandbox
-    cur.execute("SELECT symbol, SUM(purchase_quantity), purchase_price, purchase_date FROM shares \
-                WHERE id=(%s) AND symbol=(%s) AND purchase_date=(%s) AND portfolio_name=(%s) \
-                GROUP BY symbol, purchase_price, purchase_date;", \
-                (id, symbol, date_input, portfolio_name))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    rows = db_select("""
+    SELECT symbol, SUM(purchase_quantity), purchase_price, purchase_date
+    FROM shares
+    WHERE id=(%s) AND symbol=(%s) AND purchase_date=(%s) AND portfolio_name=(%s)
+    GROUP BY symbol, purchase_price, purchase_date;
+    """,
+    (id, symbol, date_input, portfolio_name))
 
     if not rows:
         return error_page(f"{portfolio_name} has no record of \
@@ -688,18 +584,15 @@ def share(portfolio_name, unique_id):
 
         if delete == "True":
             
-            params = config()
-            conn = psycopg2.connect(**params)
-            cur = conn.cursor()
-            cur.execute("DELETE FROM shares WHERE id=(%s) AND symbol=(%s) AND \
-                        purchase_price=(%s) AND purchase_date=(%s) AND portfolio_name=(%s);",
-                        (id, symbol, rows[0][2], date_input, portfolio_name))
-            conn.commit()
-            cur.close()
-            conn.close()
+            db_commit("""
+            DELETE FROM shares WHERE id=(%s) AND symbol=(%s) AND
+            purchase_price=(%s) AND purchase_date=(%s) AND portfolio_name=(%s);
+            """,
+            (id, symbol, rows[0][2], date_input, portfolio_name))
             
             flash(f"Deleted all {symbol} shares bought on \U0001F4C5 {purchase_date} from \
-            {portfolio_name}!", "success")
+                    {portfolio_name}!", "success")
+            
             return redirect(f"/portfolio/{portfolio_name}")
 
     # GET    
@@ -750,17 +643,13 @@ def account():
     if request.method=="POST":
         
         id = session["user_id"]
-        params = config()
-        conn = psycopg2.connect(**params)
-        cur = conn.cursor()
-        # portfolios and shares tables have foreign keys with ON CASCADE DELETE
-        # referencing the users table as the root
-        # so we can delete all account information with this simple query
-        cur.execute("DELETE FROM users WHERE id=(%s)", (id,))
-        conn.commit()
-        cur.close()
-        conn.close()
 
+        # Portfolios and shares tables have foreign keys with ON CASCADE DELETE
+        # Referencing the users table as the root,
+        # so we can delete all account information with this 1 line query
+        db_commit("DELETE FROM users WHERE id=(%s)", (id,))
+
+        # session still has a user_id
         session.clear()
         flash("All account information deleted!", "success")
         return redirect("/login")

@@ -181,7 +181,7 @@ def latestprice(symbol):
     # https://iexcloud.io/docs/api/
     try:
         api_key = os.environ.get("API_KEY")
-        response = requests.get(f"https://https://cloud.iexapis.com/v1/stock/{urllib.parse.quote_plus(symbol)}/quote?token={api_key}")
+        response = requests.get(f"https://cloud.iexapis.com/v1/stock/{urllib.parse.quote_plus(symbol)}/quote?token={api_key}")
         response.raise_for_status()
     except requests.RequestException:
         return None

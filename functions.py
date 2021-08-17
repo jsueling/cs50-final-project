@@ -12,16 +12,16 @@ def error_page(message, code=400):
     """Returns a message on the error and what the user should do"""
     return render_template("error_page.html", code=code, message=message), code
 
-# https://www.postgresqltutorial.com/postgresql-python/connect/
 # https://www.psycopg.org/docs/usage.html
 # https://www.freecodecamp.org/news/connect-python-with-sql/
 
 def db_select(query, data):
     """Connects to the database using config.py and executes a SELECT query"""
+    
     # Set paramaters of database connection from the config file
     params = config()
     # Open connection
-    conn = psycopg2.connect(**params)
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     # Open a cursor
     cur = conn.cursor()
     # Execute SELECT query
@@ -40,8 +40,8 @@ def db_commit(query, data):
     and commmits the changes
     does not return any results 
     """
-    params = config()
-    conn = psycopg2.connect(**params)
+
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cur = conn.cursor()
     cur.execute(query, data)
     # commit changes made from the query (insert, update, delete)

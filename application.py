@@ -35,7 +35,6 @@ def after_request(response):
 # Configure session to use filesystem (instead of signed cookies)
 # We make a temporary directory to store session files 
 # We configure session to be non-permanent (default true)
-app.config["SESSION_FILE_DIR"] = mkdtemp()
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)

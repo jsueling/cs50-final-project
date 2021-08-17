@@ -54,13 +54,11 @@ def lookup(symbol, date_input):
 
     # Contact API
     try:
-        # https://stackoverflow.com/questions/16511337/correct-way-to-try-except-using-python-requests-module
+        # https://stackoverflow.com/a/16511493
+        # https://iexcloud.io/docs/api/
         api_key = os.environ.get("API_KEY")
         frmt_date = date_input.strftime("%Y%m%d")
-        # move this to where I insert into my SQL table
-        # https://www.quora.com/Should-dates-be-saved-as-datetime-objects-or-strings-in-a-database
-        # Makes sense to store dates as a datetime for future use
-        response = requests.get(f"https://sandbox.iexapis.com/stable/stock/{urllib.parse.quote_plus(symbol)}/chart/date/{frmt_date}?token={api_key}&chartByDay=true")
+        response = requests.get(f"https://cloud.iexapis.com/v1/stock/{urllib.parse.quote_plus(symbol)}/chart/date/{frmt_date}?token={api_key}&chartByDay=true")
         response.raise_for_status()
     except requests.RequestException:
         return None
@@ -179,9 +177,10 @@ def scan(symbol, date_input):
 def latestprice(symbol):
     """Gets the latest close price without needing a date input"""
     
+    # https://iexcloud.io/docs/api/
     try:
         api_key = os.environ.get("API_KEY")
-        response = requests.get(f"https://sandbox.iexapis.com/stable/stock/{urllib.parse.quote_plus(symbol)}/quote?token={api_key}")
+        response = requests.get(f"https://https://cloud.iexapis.com/v1/stock/{urllib.parse.quote_plus(symbol)}/quote?token={api_key}")
         response.raise_for_status()
     except requests.RequestException:
         return None

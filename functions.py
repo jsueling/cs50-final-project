@@ -12,6 +12,9 @@ def error_page(message, code=400):
     """Returns a message on the error and what the user should do"""
     return render_template("error_page.html", code=code, message=message), code
 
+# https://devcenter.heroku.com/articles/heroku-postgresql#connecting-in-python
+DATABASE_URL = os.environ['DATABASE_URL']
+
 # https://www.psycopg.org/docs/usage.html
 # https://www.freecodecamp.org/news/connect-python-with-sql/
 

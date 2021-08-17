@@ -46,9 +46,6 @@ app.jinja_env.filters["usd"] = usd
 # https://flask.palletsprojects.com/en/2.0.x/cli/
 load_dotenv("keys.env")
 
-# https://devcenter.heroku.com/articles/heroku-postgresql#connecting-in-python
-DATABASE_URL = os.environ['DATABASE_URL']
-
 # Need the API_KEY for the application to function
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")

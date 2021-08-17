@@ -18,8 +18,6 @@ def error_page(message, code=400):
 def db_select(query, data):
     """Connects to the database using config.py and executes a SELECT query"""
     
-    # Set paramaters of database connection from the config file
-    params = config()
     # Open connection
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     # Open a cursor

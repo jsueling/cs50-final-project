@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %}Account{% endblock %}
+{% block account %}active{% endblock %}
+{% block main %}
+<h1 class="display-4">My Account</h1>
+<br>
+<br>
+<p class="pagetext">
+    Click the button to delete all information stored in the database
+    related to your account including username, password, portfolios, 
+    shares e.t.c.
+</p>
+<br>
+<br>
+<form action="/account" method="post">
+    <button id="deletebutton" value="True" class="btn btn-dark" type="submit">Delete my account</button>
+</form>
+
+<script src="/static/confirm.js"></script>
+
+{% endblock %}

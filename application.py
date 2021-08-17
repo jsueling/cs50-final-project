@@ -680,7 +680,7 @@ def share(portfolio_name, unique_id):
 
     if not rows:
         return error_page(f"{portfolio_name} has no record of \
-                            buying {symbol} on {date_input}", 403)
+                            buying {symbol} on {date}", 403)
     
     if request.method=="POST":
 
@@ -741,3 +741,29 @@ def share(portfolio_name, unique_id):
                                 current_price=current_price,
                                 purchase_price=purchase_price,
                                 quantity=rows[0][1])
+
+@app.route("/account", methods=["GET", "POST"])
+@login_required
+def account():
+    """Delete user's account details"""
+    
+    if request.method=="POST":
+        
+        id = session["user_id"]
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        # portfolios and shares tables have foreign keys with ON CASCADE DELETE
+        # referencing the users table as the root
+        # so we can delete all account information with this simple query
+        cur.execute("DELETE FROM users WHERE id=(%s)", (id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        session.clear()
+        flash("All account information deleted!", "success")
+        return redirect("/login")
+
+    else:
+        return render_template("account.html")

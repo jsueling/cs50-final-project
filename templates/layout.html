@@ -47,6 +47,7 @@
                                 <li class="navbar-item"><a class="nav-link {% block delete %}{% endblock %}" href="/delete">Delete</a></li>
                             </ul>
                             <ul class="navbar-nav ml-auto pl-3">
+                                <li class="nav-item"><a class="nav-link {% block account %}{% endblock %}" href="/account">Account</a></li>
                                 <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
                             </ul>
                         {% else %}
@@ -91,7 +92,12 @@
                 {% endwith %}
                 <br>
                 <main class="container-p5">
+
                     {% block main %}{% endblock %}
+
+                    <!-- https://github.com/whatwg/html/issues/5312 -->
+                    <script src="/static/disabled.js"></script>
+                    
                 </main>
             </div>
 

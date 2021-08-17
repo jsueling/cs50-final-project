@@ -2,49 +2,39 @@
 
 {% block title %}Index{% endblock %}
 {% block main %}
-    {% if no_portfolios == True %}
-        <div class="jumbotron">
-            <h1 class="display-4">Welcome to MyPortfolios!</h1>
-            <br>
-            <p class="pagetext lead">
-                A simple web app for visualising portfolio progress
-            </p>
-            <hr class="my-4">
-            <p class="pagetext">
-                The main purpose of the app is to help the user to better visualise their portfolio performance 
-                with a focus on relative performance between share purchases. This should help the user to make better decisions
-                for their portfolio in future. The user can also explore by testing hypothetical portfolios.
-                The app uses the IEX cloud API to fetch current and historical prices of shares. It uses
-               those prices to display portfolio performance dynamically to the user.
-            </p>
-            <p class="pagetext lead">
-            <br>
-                <a class="btn btn-dark btn-lg" href="/create" role="button">Get Started!</a>
-            </p>
-        </div>
-        <!-- 
-            <p> Welcome to MyPortfolios, a simple web application that emphasises the
-            visualisation of stock portfolios with the goal of enhancing the user experience
-            through better decisions and better user satisfaction.
-            
-            Once registered you have the freedom to create or replicate portfolios as you wish
-            The application contacts the iexcloud API to display current information on the value of your portfolios
-            
-            </p>
-        -->
-    {% else %}
-        <h1 class="display-4">List of Portfolios</h1>
+{% if no_portfolios == True %}
+    <div class="jumbotron">
+        <h1 class="display-4">Welcome to MyPortfolios!</h1>
         <br>
+        <p class="pagetext lead">
+            A simple web app for visualising portfolio progress
+        </p>
+        <hr class="my-4">
+        <p class="pagetext">
+            The main purpose of the app is to help the user to better visualise their portfolio performance 
+            with a focus on relative performance between share purchases. This should help the user to make better decisions
+            for their portfolio in future. The user can also explore by testing hypothetical portfolios.
+            The app uses the IEX cloud API to fetch current and historical prices of shares. It uses
+            those prices to display portfolio performance dynamically to the user.
+        </p>
+        <p class="pagetext lead">
         <br>
-        <!-- https://flask.palletsprojects.com/en/2.0.x/quickstart/#url-building -->
-        <form action="/" method="post">
-            {% for row in portfolios %}
-                <button class="btn btn-outline-dark btn-lg" type="submit" name="portfolio_name" value="{{ row[0] }}">
-                    {{ row[0] }}
-                </button>
-                <br>
-                <br>
-            {% endfor %}
-        </form>
-    {% endif %}
+            <a class="btn btn-dark btn-lg" href="/create" role="button">Get Started!</a>
+        </p>
+    </div>
+{% else %}
+    <h1 class="display-4">List of Portfolios</h1>
+    <br>
+    <br>
+    <!-- https://flask.palletsprojects.com/en/2.0.x/quickstart/#url-building -->
+    <form action="/" method="post">
+        {% for row in portfolios %}
+            <button class="btn btn-outline-dark btn-lg " type="submit" name="portfolio_name" value="{{ row[0] }}">
+                {{ row[0] }}
+            </button>
+            <br>
+            <br>
+        {% endfor %}
+    </form>
+{% endif %}
 {% endblock %}

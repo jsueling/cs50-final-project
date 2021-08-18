@@ -1,7 +1,7 @@
 // Find every input on the page
 var portfolios = document.querySelectorAll("input");
 // Find the button
-var button = document.getElementById("button");
+var button = document.getElementById("deletebutton");
 
 // For each input add eventlistener that, on click, runs the function checked()
 for(var i = 0; i < portfolios.length; i++) {

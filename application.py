@@ -3,11 +3,12 @@ import re
 
 from flask import Flask, flash, render_template, redirect, request, session
 from flask_session import Session
-from tempfile import mkdtemp
 from functions import error_page, login_required, lookup, usd, scan, latestprice, db_commit, db_select
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, date, time, timedelta
-from dotenv import load_dotenv
+
+# Used while creating offline, now stored in Heroku config var
+# from dotenv import load_dotenv
 
 # Setup the flask app
 app = Flask(__name__)
@@ -32,9 +33,10 @@ def after_request(response):
 
 # https://stackoverflow.com/questions/3948975/why-store-sessions-on-the-server-instead-of-inside-a-cookie
 # https://flask-session.readthedocs.io/en/latest/#configuration
-# Configure session to use filesystem (instead of signed cookies)
-# We make a temporary directory to store session files 
+
 # We configure session to be non-permanent (default true)
+# Configure session to use filesystem (instead of signed cookies) 
+# Create Session object by passing it the application
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
@@ -44,7 +46,10 @@ Session(app)
 app.jinja_env.filters["usd"] = usd
 
 # https://flask.palletsprojects.com/en/2.0.x/cli/
+# Used while creating offline, now a Heroku config var
+"""
 load_dotenv("keys.env")
+"""
 
 # Need the API_KEY for the application to function
 if not os.environ.get("API_KEY"):
@@ -57,7 +62,7 @@ def index():
     Homepage that shows a welcome message if the user has no portfolios
     or a list of links for all portfolios they have created
     """
-    # store current user_id from session
+    # Store current user_id from session
     id = session["user_id"]
 
     if request.method=="POST":
@@ -161,6 +166,7 @@ def login():
         lower_username = username.lower()
         password = request.form.get("password")
 
+        # Form checks
         if not username:
             return error_page("You must enter a username", 403)
         if not password:
@@ -230,9 +236,9 @@ def create():
 @login_required
 def portfolio(portfolio_name):
     """
-    Displays the current portfolio with a stacked horizontal bar chart,
-    the overall $ and percentage change of the portfolio aggregating all purchases.
-    The bar is dynamically generated to show relative performance
+    Displays the current portfolio with a stacked horizontal bar chart and
+    the overall $ and percentage change of the portfolio having aggregating all purchases.
+    The bar is dynamically generated to show relative performance on the day
     between constituents. The user can click and mouseover these elements
     to see more details.
     """
@@ -297,26 +303,24 @@ def portfolio(portfolio_name):
             # store in session
             session[unique_id + '_current'] = current_price
 
+        # Cast as float
         purchase_price = float(row[2])
 
-        # Difference in price * Quantity
+        # (Difference in price) * Quantity
         # to get $ change in value
         net_change = (current_price - purchase_price)*row[1]
 
-        # The html will need all of these values
+        # The html will need all of the values in z
         # the values for 'contribution' and 'flex' are changed further down
         # 'flex' is used to give the flex value of each element in the horizontal stacked bar chart
         # 'contribution' is the contribution of that purchase to the whole portfolio as a percentage.
         # It also separates a gain from a loss because flex cannot take negative values
         
-        # Why the duplication here?
-        if net_change < 0:
-            z = [{'unique_id': unique_id, 'flex': net_change, 'contribution': net_change}]
-        else:
-            z = [{'unique_id': unique_id, 'flex': net_change, 'contribution': net_change}]
+        z = [{'unique_id': unique_id, 'flex': net_change, 'contribution': net_change}]
 
         x += z
 
+        # Totals
         current_overall += current_price*row[1]
         purchase_overall += purchase_price*row[1]
 
@@ -325,11 +329,14 @@ def portfolio(portfolio_name):
 
     # https://stackoverflow.com/a/73050
     # https://stackoverflow.com/a/46013151
+    # Sort x by 'flex' values which is the net_change $ values for now
     x = sorted(x, key=lambda a: a["flex"], reverse=True)
+
     # x when sorted 
-    # [{'unique_id': 'a', 'flex': 16},  ...'flex': 10},  ..9},  ..5},  ..-14}]
+    # [{'unique_id': 'a', 'flex': 16 ...}, ... ,'flex': 10, ...},  ..9},  ..5},  ..-14}]
     
     # Finding largest element to use as a parent to scale from
+    # must be either the first or the last element of the list when sorted
     i = len(x) - 1
     
     if x[0]["flex"] >= abs(x[i]["flex"]):
@@ -339,14 +346,15 @@ def portfolio(portfolio_name):
 
     # Iterate over the list x:
 
-    # Prep j['flex'] for our html as a flex value ranging from 0 to 1
-    # so j's bar size on the page relative to the parent is the same as
-    # its relative gain/loss
+    # Prep j['flex'] for our html as a flex value ranging from 0 to 1,
+    # so j's bar size on the page relative to the parent is the same as it's $ gain/loss relative to the parent.
+    # Flex values cannot be negative so make j['flex'] values positive if negative
 
-    # j['contribution'] is used in the hover animation in css shown on the page
-    # and also 
-    # To get a purchase's contribution as a percentage:
-    # divide net profit for individual purchase over overall purchase price
+    # Prep j['contribution'] for our hover animation in css shown on the page.
+    # On hover we want to show the percentage contribution of that share to net profit of the portfolio.
+    # j['contribution'] is also used to differentiate between gain and loss elements.
+    # To get a purchase's contribution to net profit of a portfolio as a percentage:
+    # divide net change for individual purchase over overall purchase price
     for j in x:
 
         j["contribution"] = round((j["contribution"]/purchase_overall)*100, 2)
@@ -356,7 +364,7 @@ def portfolio(portfolio_name):
         else:
             j["flex"] = -1 * round((j["flex"]/y), 4)
 
-    # portfolio_name is the argument passed to the route /portfolio/<portfolio_name>
+    # portfolio_name is the argument passed to this route /portfolio/<portfolio_name>
     return render_template("portfolio.html", x=x, portfolio_name=portfolio_name, str=str,
                             net_overall=net_overall, net_overallpercent=net_overallpercent,
                             current_overall=current_overall, purchase_overall=purchase_overall)
@@ -370,7 +378,7 @@ def delete():
 
     names = db_select("SELECT portfolio_name FROM portfolios WHERE id = (%s)", (id,))
 
-    # User restricted from this page if he has no portfolios to delete
+    # User redirected from this page if he has no portfolios to delete
     if not names:
         flash("No portfolios detected - you have been redirected here automatically.", "primary")
         return redirect("/create")
@@ -407,8 +415,9 @@ def add():
 
     # Both methods need access to these variables
     today = date.today()
+
     # https://iexcloud.io/docs/api/#historical-prices
-    # Iexcloud API only offers historical data >5years on paid plans
+    # Iexcloud API only offers historical data less than 5 years on paid plans
     # 365 * 5 = 1825
     # https://docs.python.org/3/library/datetime.html#timedelta-objects
     min_date = today - timedelta(days=1825)
@@ -440,13 +449,12 @@ def add():
             # Convert string input to a date object so we can compare
             parsed_datetime = datetime.strptime(purchase_date, "%Y-%m-%d")
             parsed_date = parsed_datetime.date()
-        # Error check mainly for Iex browsers when having to type a date
+        # Error check mainly for Internet explorer users when having to type a date
         except ValueError:
            return error_page("Date input must be valid and YYYY-MM-DD format")
 
         # Prevent the user from entering a date out of these bounds, today and 5 years ago
         if parsed_date < min_date:
-            # TODO Test lower bound Live
             return error_page("This application is limited to only support historical \
                                 price queries up to 5 years (1825 days) past", 403)
         if parsed_date > today:
@@ -501,7 +509,7 @@ def add():
         scan_date = data["date"]
         purchase_price = data["price"]
 
-        # All validity checks passed
+        # All validity checks passed, add share
         db_commit("""
         INSERT INTO shares
         (symbol, purchase_quantity, purchase_price, purchase_date, portfolio_name, id)
@@ -513,7 +521,7 @@ def add():
                 saved to {portfolio_name}!", "success")
 
         # https://stackoverflow.com/questions/8552675/form-sending-error-flask
-        # The buttons do the same thing except redirect to different pages
+        # The buttons submit the same form except redirect to different pages
         if request.form["submit"] == "single":
             return redirect("/")
         else:
@@ -564,7 +572,6 @@ def share(portfolio_name, unique_id):
     purchase_date = a[1][:4] + '-' + a[1][4:-2] + '-' + a[1][-2:]
 
     # Both Get and post need access to this query
-    # Potential error if different prices on the same day but should only be a problem using sandbox
     rows = db_select("""
     SELECT symbol, SUM(purchase_quantity), purchase_price, purchase_date
     FROM shares
@@ -577,6 +584,7 @@ def share(portfolio_name, unique_id):
         return error_page(f"{portfolio_name} has no record of \
                             buying {symbol} on {date}", 403)
     
+    # User wants to delete the share
     if request.method=="POST":
 
         delete = request.form.get("delete")
@@ -617,10 +625,10 @@ def share(portfolio_name, unique_id):
         # Cast as a float to subtract from current_price next line
         purchase_price = float(rows[0][2])
 
-        # Difference in current and purchase price * SUM(purchase_quantity)
+        # Net profit for individual purchase
         dollar_change = (current_price - purchase_price) * rows[0][1]
 
-        # Dollar change as a percentage of purchase price * SUM(purchase_quantity)
+        # Percent Change for individual purchase
         percent_change = round(dollar_change / (purchase_price * rows[0][1]) * 100, 2)
 
         return render_template("share.html",
@@ -655,3 +663,13 @@ def account():
 
     else:
         return render_template("account.html")
+
+def errorhandler(e):
+    """Handle error"""
+    if not isinstance(e, HTTPException):
+        e = InternalServerError()
+    return error_page(e.name, e.code)
+
+# Listen for errors
+for code in default_exceptions:
+    app.errorhandler(code)(errorhandler)

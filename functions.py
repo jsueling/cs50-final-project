@@ -13,6 +13,7 @@ def error_page(message, code=400):
     return render_template("error_page.html", code=code, message=message), code
 
 # https://devcenter.heroku.com/articles/heroku-postgresql#connecting-in-python
+# Stored as a heroku config var
 DATABASE_URL = os.environ['DATABASE_URL']
 
 # https://www.psycopg.org/docs/usage.html
@@ -38,7 +39,7 @@ def db_select(query, data):
 def db_commit(query, data):
     """
     Connects to the database using config.py, executes a query
-    and commmits the changes
+    and commits the changes
     does not return any results 
     """
 
@@ -201,6 +202,8 @@ def login_required(f):
 
     http://flask.pocoo.org/docs/1.0/patterns/viewdecorators/
     """
+    
+    #https://stackoverflow.com/a/309000
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if session.get("user_id") is None:

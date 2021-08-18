@@ -30,20 +30,14 @@
 <br>
 <div id="full_bar">
     <!--
-        Problems deciding how the divs are scaled
-
-        Since we are scaling off the largest gain/loss in a users portfolio the parent
-        element always appears the same size on the page which could be problematic
-
-        Using absolute sizing, extreme gains/losses could look odd/not visible to the user
-        
-        The largest gain or loss is arguably the most important detail to 
-        the user in tracking their relative portfolio progress
-
-        For each element in x: if gain key was assigned, group with gain elements, style color green
-        else style red for loss. Create new attribute data-id, manipulate a string using slicing/concatenation for use in CSS
-        All dates will be 8 digit strings at the end of unique_id so the rest of the string is the symbol
-        cast i['contribution'] as a string to concatenate
+        For each element in x:
+        If contribution is positive, group with gain elements, style color green
+        else style red for loss.
+        Create new attribute data-id, manipulate a string using 
+        slicing/concatenation for use in CSS.
+        All dates will be 8 digit strings at the end of unique_id so the rest of the string
+        is the symbol.
+        Cast i['contribution'] as a string to concatenate.
     -->
     {% for i in x %}
         {% if i["contribution"] > 0 %}

@@ -3,7 +3,6 @@ import requests
 import psycopg2
 import urllib.parse
 
-from config import config
 from flask import redirect, session, render_template 
 from functools import wraps
 from datetime import time, timedelta, datetime, date

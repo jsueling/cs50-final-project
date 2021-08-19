@@ -152,7 +152,6 @@ def scan(symbol, date_input):
                 # lookup 1 day after date input
                 scan_date = purchase_date + timedelta(days=2)
                 data = lookup(symbol, scan_date)
-    
 
     try:
         return {

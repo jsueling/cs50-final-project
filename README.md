@@ -1,10 +1,10 @@
 # MyPortfolios
 
-This project was created as the final project for Harvard's CS50x course.
+This project was created as the final project for Harvard's [CS50x](https://cs50.harvard.edu/x/) course.
 
 **Video Demo:** [https://www.youtube.com/watch?v=5i8XTZZDeNs](https://www.youtube.com/watch?v=5i8XTZZDeNs)
 
----
+<img width="2112" height="1632" alt="CS50" src="https://github.com/user-attachments/assets/3ee4cbe0-274c-4224-a7f2-40b22e449ede" />
 
 ## ⚠️ Project Status: Archived
 

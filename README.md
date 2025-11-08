@@ -4,9 +4,9 @@ This project was created as the final project for Harvard's [CS50x](https://cs50
 
 **Video Demo:** [https://www.youtube.com/watch?v=5i8XTZZDeNs](https://www.youtube.com/watch?v=5i8XTZZDeNs)
 
-<div style="text-align: center;">
+<div align="center">
     <a href="assets/CS50x.png">
-    <img alt="CS50x completion certificate for James Sue-Ling" src="assets/CS50x.png" width="650" />
+    <img alt="CS50x completion certificate for James Sue-Ling" src="assets/CS50x.png" width="800" />
     </a>
 </div>
 
